@@ -5,8 +5,8 @@
   "description": "Web management UI and API proxy for Llama macOS app",
   "main": "server.ts",
   "scripts": {
-    "start": "npx tsx server.ts",
-    "dev": "npx tsx server.ts"
+    "start": "bun run server.ts",
+    "dev": "bun run server.ts"
   },
   "dependencies": {
     "express": "^5.1.0",
