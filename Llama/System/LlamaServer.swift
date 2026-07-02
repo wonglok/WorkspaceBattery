@@ -36,7 +36,7 @@ class LlamaServer {
 
   /// Default port the server listens on -- matches llama.cpp's own default,
   /// so URLs the app prints line up with a plain `llama serve`.
-  nonisolated static let defaultPort = 8080
+  nonisolated static let defaultPort = 8222
 
   /// The effective port: the user's override if set, else the default.
   nonisolated static var port: Int { UserSettings.serverPort ?? defaultPort }

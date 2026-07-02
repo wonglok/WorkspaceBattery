@@ -15,7 +15,7 @@ import path from "path";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 const PORT = parseInt(process.env.PORT ?? "", 10) || 8333;
-const LLAMA_HOST = process.env.LLAMA_HOST || "http://localhost:8080";
+const LLAMA_HOST = process.env.LLAMA_HOST || "http://localhost:8222";
 
 const app = express();
 

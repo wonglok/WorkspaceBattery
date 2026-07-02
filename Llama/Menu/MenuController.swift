@@ -607,7 +607,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   private func openWebUI() {
     // Close the menu first, then open the web UI
     statusItem.menu?.cancelTracking()
-    guard let url = URL(string: "http://localhost:8333") else { return }
+    guard let url = URL(string: "http://localhost:8222") else { return }
     NSWorkspace.shared.open(url)
   }
 
