@@ -8,7 +8,6 @@ final class HeaderView: ItemView {
   private let appNameLabel = Theme.primaryLabel()
   private let restartIcon = NSImageView()
   private let statusStackView = NSStackView()
-  private let statusLabel = Theme.secondaryLabel()
   private let linkLabel = Theme.secondaryLabel()
   private let copyButton = NSButton()
   private let openWorkspaceButton = NSButton()
@@ -53,7 +52,7 @@ final class HeaderView: ItemView {
     statusStackView.distribution = .fill
 
     // Main stack for vertical layout of title row and status
-    let mainStack = NSStackView(views: [titleStack, statusStackView])
+    let mainStack = NSStackView(views: [titleStack])
     mainStack.orientation = .vertical
     mainStack.alignment = .centerX
     mainStack.spacing = Layout.textLineSpacing
@@ -64,10 +63,10 @@ final class HeaderView: ItemView {
     // Link Label Configuration
     linkLabel.isSelectable = false  // Make it look like a label, not editable
 
-    // Copy Button Configuration
-    Theme.configure(copyButton, symbol: "doc.on.doc", tooltip: "Copy URL", pointSize: 11)
-    copyButton.target = self
-    copyButton.action = #selector(copyUrl)
+    // // Copy Button Configuration
+    // Theme.configure(copyButton, symbol: "doc.on.doc", tooltip: "Copy URL", pointSize: 11)
+    // copyButton.target = self
+    // copyButton.action = #selector(copyUrl)
 
     // Open Workspace Button Configuration
     openWorkspaceButton.attributedTitle = NSAttributedString(
@@ -86,10 +85,9 @@ final class HeaderView: ItemView {
     openWorkspaceButton.action = #selector(openWorkspaceClicked)
     openWorkspaceButton.translatesAutoresizingMaskIntoConstraints = false
 
-    statusStackView.addArrangedSubview(statusLabel)
     statusStackView.addArrangedSubview(linkLabel)
     statusStackView.addArrangedSubview(NSView.spacer(width: 4))
-    statusStackView.addArrangedSubview(copyButton)
+    // statusStackView.addArrangedSubview(copyButton)
     statusStackView.addArrangedSubview(NSView.spacer(width: 8))
     statusStackView.addArrangedSubview(NSView.flexibleSpacer())
   }
@@ -118,44 +116,37 @@ final class HeaderView: ItemView {
     appNameLabel.stringValue = "Workspace Battery"
 
     // A hard server error (e.g. the port is held by another app) means there's
-    // no working URL to show -- surface the reason in place of the Base URL /
-    // The link/Base URL row would otherwise misleadingly imply the server is up.
+    // Surface the error state.
     if case .error(let err) = server.state {
-      statusLabel.stringValue = err.errorDescription ?? "Server error"
-      statusLabel.textColor = NSColor.labelColor
-      statusLabel.isHidden = false
       linkLabel.isHidden = true
       copyButton.isHidden = true
       needsDisplay = true
       return
     }
 
-    // Build server URLs using the resolved host (handles 0.0.0.0 -> local IP)
-    let host = LlamaServer.resolvedHost
-    let linkText = "\(host):\(LlamaServer.port)"
-    let apiUrlString = "http://\(linkText)/v1"
+    // // Build server URLs using the resolved host (handles 0.0.0.0 -> local IP)
+    // let host = LlamaServer.resolvedHost
+    // let linkText = "\(host):\(LlamaServer.port)"
+    // let apiUrlString = "http://\(linkText)/v1"
 
-    self.currentUrl = URL(string: apiUrlString)!
+    // self.currentUrl = URL(string: apiUrlString)!
 
-    statusLabel.stringValue = "Base URL: "
-    statusLabel.textColor = NSColor.labelColor
-    statusLabel.isHidden = false
 
-    let displayString = apiUrlString.replacingOccurrences(of: "http://", with: "")
-    let attrTitle = NSAttributedString(
-      string: displayString,
-      attributes: [
-        .foregroundColor: Theme.Colors.textPrimary,
-        .font: Theme.Fonts.secondary,
-      ]
-    )
-    linkLabel.attributedStringValue = attrTitle
-    linkLabel.isHidden = false
-    copyButton.isHidden = false
+    // let displayString = apiUrlString.replacingOccurrences(of: "http://", with: "")
+    // let attrTitle = NSAttributedString(
+    //   string: displayString,
+    //   attributes: [
+    //     .foregroundColor: Theme.Colors.textPrimary,
+    //     .font: Theme.Fonts.secondary,
+    //   ]
+    // )
+    // linkLabel.attributedStringValue = attrTitle
+    // linkLabel.isHidden = false
+    // copyButton.isHidden = false
 
 
     // Update copy icon based on confirmation state
-    Theme.updateCopyIcon(copyButton, showingConfirmation: showingCopyConfirmation)
+    // Theme.updateCopyIcon(copyButton, showingConfirmation: showingCopyConfirmation)
 
     needsDisplay = true
   }
