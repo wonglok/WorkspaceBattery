@@ -416,6 +416,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     let footerView = FooterView(
       llamaVersion: LlamaInstallManager.shared.currentVersion?.tag,
       llamaOrigin: LlamaInstallManager.shared.currentOrigin,
+      onOpenWebUI: { [weak self] in self?.openWebUI() },
       onOpenSettings: { [weak self] in self?.openSettings() },
       onQuit: { [weak self] in self?.quitApp() }
     )
@@ -423,6 +424,12 @@ final class MenuController: NSObject, NSMenuDelegate {
     let item = NSMenuItem.viewItem(with: footerView)
     item.isEnabled = true
     menu.addItem(item)
+
+    // Attribution label at the very bottom of the menu
+    let attribution = TextItemView(text: "Workspace Battery is powered by llama.cpp", style: .description)
+    let attributionItem = NSMenuItem.viewItem(with: attribution)
+    attributionItem.isEnabled = true
+    menu.addItem(attributionItem)
   }
 
 
@@ -591,10 +598,17 @@ final class MenuController: NSObject, NSMenuDelegate {
 
   // MARK: - Settings Section
 
-  private func openSettings() {
-    // Close the menu first, then open settings window
+ private func openSettings() {
+   // Close the menu first, then open settings window
+   statusItem.menu?.cancelTracking()
+   NotificationCenter.default.post(name: .LBShowSettings, object: nil)
+ }
+
+  private func openWebUI() {
+    // Close the menu first, then open the web UI
     statusItem.menu?.cancelTracking()
-    NotificationCenter.default.post(name: .LBShowSettings, object: nil)
+    guard let url = URL(string: "http://localhost:8333") else { return }
+    NSWorkspace.shared.open(url)
   }
 
   // MARK: - Folder Warning

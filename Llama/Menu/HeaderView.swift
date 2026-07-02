@@ -11,10 +11,9 @@ final class HeaderView: ItemView {
   private let statusLabel = Theme.secondaryLabel()
   private let linkLabel = Theme.secondaryLabel()
   private let copyButton = NSButton()
-  private let webUiLabel = Theme.secondaryLabel()
+  private let openWorkspaceButton = NSButton()
 
   private var currentUrl: URL?
-  private var webUiUrl: URL?
   private var showingCopyConfirmation = false
   private var showingRestartIcon = false
   private var restartIconHideTask: DispatchWorkItem?
@@ -33,15 +32,15 @@ final class HeaderView: ItemView {
   private func setup() {
     widthAnchor.constraint(equalToConstant: Layout.menuWidth).isActive = true
 
-    appNameLabel.stringValue = "Llama"
+    appNameLabel.stringValue = "Workspace Battery"
 
     // Restart icon -- shown briefly while server is restarting
     Theme.configure(restartIcon, symbol: "arrow.trianglehead.2.clockwise", pointSize: 11)
-    restartIcon.contentTintColor = Theme.Colors.textSecondary
+    restartIcon.contentTintColor = NSColor.linkColor
     restartIcon.isHidden = true
 
     // Title stack for horizontal layout of app name and restart icon
-    let titleStack = NSStackView(views: [appNameLabel, restartIcon])
+    let titleStack = NSStackView(views: [appNameLabel, restartIcon, NSView.flexibleSpacer(), openWorkspaceButton])
     titleStack.orientation = .horizontal
     titleStack.spacing = 6
     titleStack.alignment = .centerY
@@ -56,7 +55,7 @@ final class HeaderView: ItemView {
     // Main stack for vertical layout of title row and status
     let mainStack = NSStackView(views: [titleStack, statusStackView])
     mainStack.orientation = .vertical
-    mainStack.alignment = .leading
+    mainStack.alignment = .centerX
     mainStack.spacing = Layout.textLineSpacing
 
     contentView.addSubview(mainStack)
@@ -70,10 +69,20 @@ final class HeaderView: ItemView {
     copyButton.target = self
     copyButton.action = #selector(copyUrl)
 
-    // WebUI Label Configuration
-    let webUiClick = NSClickGestureRecognizer(target: self, action: #selector(openWebUi))
-    webUiLabel.addGestureRecognizer(webUiClick)
-    webUiLabel.isSelectable = false
+    // Open Workspace Button Configuration
+    openWorkspaceButton.attributedTitle = NSAttributedString(
+      string: "Open Workspace",
+      attributes: Theme.secondaryAttributes(color: NSColor.linkColor)
+    )
+    openWorkspaceButton.bezelStyle = .inline
+    openWorkspaceButton.isBordered = false
+    openWorkspaceButton.wantsLayer = true
+    openWorkspaceButton.layer?.cornerRadius = 5
+    openWorkspaceButton.layer?.borderWidth = 1
+    openWorkspaceButton.layer?.borderColor = Theme.Colors.border.cgColor
+    openWorkspaceButton.target = self
+    openWorkspaceButton.action = #selector(openWorkspaceClicked)
+    openWorkspaceButton.translatesAutoresizingMaskIntoConstraints = false
 
     statusStackView.addArrangedSubview(statusLabel)
     statusStackView.addArrangedSubview(linkLabel)
@@ -81,7 +90,6 @@ final class HeaderView: ItemView {
     statusStackView.addArrangedSubview(copyButton)
     statusStackView.addArrangedSubview(NSView.spacer(width: 8))
     statusStackView.addArrangedSubview(NSView.flexibleSpacer())
-    statusStackView.addArrangedSubview(webUiLabel)
   }
 
   func refresh() {
@@ -105,18 +113,17 @@ final class HeaderView: ItemView {
     #endif
 
     // Connect to server info
-    appNameLabel.stringValue = "Llama"
+    appNameLabel.stringValue = "Workspace Battery"
 
     // A hard server error (e.g. the port is held by another app) means there's
     // no working URL to show -- surface the reason in place of the Base URL /
-    // WebUI row, which would otherwise misleadingly imply the server is up.
+    // The link/Base URL row would otherwise misleadingly imply the server is up.
     if case .error(let err) = server.state {
       statusLabel.stringValue = err.errorDescription ?? "Server error"
-      statusLabel.textColor = Theme.Colors.textSecondary
+      statusLabel.textColor = NSColor.linkColor
       statusLabel.isHidden = false
       linkLabel.isHidden = true
       copyButton.isHidden = true
-      webUiLabel.isHidden = true
       needsDisplay = true
       return
     }
@@ -125,13 +132,11 @@ final class HeaderView: ItemView {
     let host = LlamaServer.resolvedHost
     let linkText = "\(host):\(LlamaServer.port)"
     let apiUrlString = "http://\(linkText)/v1"
-    let webUiUrlString = "http://\(linkText)/"
 
     self.currentUrl = URL(string: apiUrlString)!
-    self.webUiUrl = URL(string: webUiUrlString)!
 
     statusLabel.stringValue = "Base URL: "
-    statusLabel.textColor = Theme.Colors.textSecondary
+    statusLabel.textColor = NSColor.linkColor
     statusLabel.isHidden = false
 
     let displayString = apiUrlString.replacingOccurrences(of: "http://", with: "")
@@ -145,16 +150,7 @@ final class HeaderView: ItemView {
     linkLabel.attributedStringValue = attrTitle
     linkLabel.isHidden = false
     copyButton.isHidden = false
-    webUiLabel.isHidden = false
 
-    let attrWebUi = NSAttributedString(
-      string: "WebUI",
-      attributes: [
-        .foregroundColor: NSColor.linkColor,
-        .font: Theme.Fonts.secondary,
-      ]
-    )
-    webUiLabel.attributedStringValue = attrWebUi
 
     // Update copy icon based on confirmation state
     Theme.updateCopyIcon(copyButton, showingConfirmation: showingCopyConfirmation)
@@ -162,10 +158,9 @@ final class HeaderView: ItemView {
     needsDisplay = true
   }
 
-  @objc private func openWebUi() {
-    if let url = webUiUrl {
-      openInBrowser(url)
-    }
+
+  @objc private func openWorkspaceClicked() {
+    openInBrowser(URL(string: "http://localhost:8333/")!)
   }
 
   @objc private func copyUrl() {

@@ -301,6 +301,13 @@ function addMessage(role, content) {
   return msg;
 }
 
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function formatMessage(text) {
   // Escape HTML, then apply simple markdown
   let html = text
@@ -311,6 +318,33 @@ function formatMessage(text) {
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br>");
+  return html;
+}
+
+// ── Render thinking + content ─────────────────────────────────────────────
+
+function renderStreamContent(thinking, content, openThought) {
+  let html = "";
+  if (thinking) {
+    const escapedThinking = thinking
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    html += `<details class="thinking-block"${openThought ? " open" : ""}>
+  <summary>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v9a2.5 2.5 0 0 1-5 0v-9A2.5 2.5 0 0 1 9.5 2z" />
+      <path d="M4 15h11" />
+      <path d="M6.5 15v3a2.5 2.5 0 0 0 5 0v-3" />
+    </svg>
+    <span>Thought</span>
+  </summary>
+  <div class="thinking-text">${escapedThinking}</div>
+</details>`;
+  }
+  if (content) {
+    html += formatMessage(content);
+  }
   return html;
 }
 
@@ -336,7 +370,8 @@ async function sendMessage() {
   dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
 
   abortController = new AbortController();
-  let fullContent = "";
+  let fullContent = "", thinkingContent = "";
+  let hasThinking = false;
 
   try {
     const resp = await fetch("/api/chat/stream", {
@@ -382,10 +417,20 @@ async function sendMessage() {
 
             try {
               const parsed = JSON.parse(data);
-              const delta = parsed.choices?.[0]?.delta?.content || "";
-              if (delta) {
-                fullContent += delta;
-                assistantMsg.innerHTML = formatMessage(fullContent);
+              const delta = parsed.choices?.[0]?.delta || {};
+              const thinking = delta.thinking || delta.reasoning || "";
+              const content = delta.content || "";
+
+              if (thinking) {
+                hasThinking = true;
+                thinkingContent += thinking;
+              }
+              if (content) {
+                fullContent += content;
+              }
+
+              if (thinking || content) {
+                assistantMsg.innerHTML = renderStreamContent(thinkingContent, fullContent, hasThinking);
                 dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
               }
             } catch {

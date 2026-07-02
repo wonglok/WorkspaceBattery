@@ -2,6 +2,7 @@ import AppKit
 
 final class FooterView: ItemView {
   private let onOpenSettings: () -> Void
+  private let onOpenWebUI: () -> Void
   private let onQuit: () -> Void
   /// Build of the `llama` binary actually in use, or nil if not yet known.
   private let llamaVersion: String?
@@ -12,11 +13,13 @@ final class FooterView: ItemView {
   init(
     llamaVersion: String?,
     llamaOrigin: LlamaBinaries.Origin,
+    onOpenWebUI: @escaping () -> Void,
     onOpenSettings: @escaping () -> Void,
     onQuit: @escaping () -> Void
   ) {
     self.llamaVersion = llamaVersion
     self.llamaOrigin = llamaOrigin
+    self.onOpenWebUI = onOpenWebUI
     self.onOpenSettings = onOpenSettings
     self.onQuit = onQuit
     super.init(frame: .zero)
@@ -63,12 +66,17 @@ final class FooterView: ItemView {
       title: "Settings", target: self, action: #selector(openSettingsClicked))
     settingsButton.translatesAutoresizingMaskIntoConstraints = false
 
+    // Open WebUI Button
+    let openButton = FooterButton(title: "Open", target: self, action: #selector(openWebUIClicked))
+    openButton.translatesAutoresizingMaskIntoConstraints = false
+
     // Quit Button
     let quitButton = FooterButton(title: "Quit", target: self, action: #selector(quitClicked))
     quitButton.translatesAutoresizingMaskIntoConstraints = false
 
     contentView.addSubview(versionLabel)
     contentView.addSubview(llamaLabel)
+    contentView.addSubview(openButton)
     contentView.addSubview(settingsButton)
     contentView.addSubview(quitButton)
 
@@ -84,12 +92,16 @@ final class FooterView: ItemView {
       quitButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
       quitButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
 
+      openButton.trailingAnchor.constraint(equalTo: settingsButton.leadingAnchor, constant: -5),
+      openButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+
       settingsButton.trailingAnchor.constraint(equalTo: quitButton.leadingAnchor, constant: -5),
       settingsButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
     ])
   }
 
   @objc private func openSettingsClicked() { onOpenSettings() }
+  @objc private func openWebUIClicked() { onOpenWebUI() }
   @objc private func quitClicked() { onQuit() }
 
   private var appVersionText: String {
