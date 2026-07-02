@@ -261,5 +261,5 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Llama web server listening on http://localhost:${PORT}`);
   console.log(`Proxying llama-server at ${LLAMA_HOST}`);
-  console.log(`Web UI: http://localhost:${PORT}`);
+  console.log(`UI: http://localhost:${PORT}`);
 });

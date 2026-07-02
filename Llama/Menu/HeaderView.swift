@@ -120,7 +120,7 @@ final class HeaderView: ItemView {
     // The link/Base URL row would otherwise misleadingly imply the server is up.
     if case .error(let err) = server.state {
       statusLabel.stringValue = err.errorDescription ?? "Server error"
-      statusLabel.textColor = NSColor.linkColor
+      statusLabel.textColor = NSColor.labelColor
       statusLabel.isHidden = false
       linkLabel.isHidden = true
       copyButton.isHidden = true
@@ -136,7 +136,7 @@ final class HeaderView: ItemView {
     self.currentUrl = URL(string: apiUrlString)!
 
     statusLabel.stringValue = "Base URL: "
-    statusLabel.textColor = NSColor.linkColor
+    statusLabel.textColor = NSColor.labelColor
     statusLabel.isHidden = false
 
     let displayString = apiUrlString.replacingOccurrences(of: "http://", with: "")

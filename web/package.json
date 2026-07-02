@@ -6,7 +6,7 @@
   "main": "server.ts",
   "scripts": {
     "start": "bun run server.ts",
-    "dev": "bun run server.ts"
+    "dev": "bun server.ts --watch"
   },
   "dependencies": {
     "express": "^5.1.0",
