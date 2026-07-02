@@ -99,7 +99,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 156891972E2685F700F71BD4 /* Build configuration list for PBXProject "Llama" */;
+			buildConfigurationList = 156891972E2685F700F71BD4 /* Build configuration list for PBXProject "workspace-battery" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -147,7 +147,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "# Copy web assets into the app bundle\nset -euo pipefail\n\nSRC=\"${SRCROOT}/web\"\nDST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\n\n# Copy bun binary\ncp \"${SRC}/bin/bun\" \"${DST}/bun\"\nchmod +x \"${DST}/bun\"\n\n# Copy node binary\ncp \"${SRC}/bin/node\" \"${DST}/node\"\nchmod +x \"${DST}/node\"\n\n# Copy web directory (server.js, public/, node_modules)\nrm -rf \"${DST}/web\"\nmkdir -p \"${DST}/web\"\ncp -R \"${SRC}/server.js\" \"${DST}/web/\"\ncp -R \"${SRC}/public\" \"${DST}/web/\"\ncp -R \"${SRC}/node_modules\" \"${DST}/web/\"\ncp \"${SRC}/package.json\" \"${DST}/web/\"\n";
+			shellScript = "# Copy web assets into the app bundle\nset -euo pipefail\n\nSRC=\"${SRCROOT}/web\"\nDST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\n\n# Copy bun binary\ncp \"${SRC}/bin/bun\" \"${DST}/bun\"\nchmod +x \"${DST}/bun\"\n\n# Copy node binary\ncp \"${SRC}/bin/node\" \"${DST}/node\"\nchmod +x \"${DST}/node\"\n\n# Copy web directory (server.js, public/, node_modules)\nrm -rf \"${DST}/web\"\nmkdir -p \"${DST}/web\"\ncp -R \"${SRC}/server.ts\" \"${DST}/web/\"\ncp -R \"${SRC}/public\" \"${DST}/web/\"\ncp -R \"${SRC}/node_modules\" \"${DST}/web/\"\ncp \"${SRC}/package.json\" \"${DST}/web/\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -286,9 +286,10 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_ENTITLEMENTS = "Llama/WorkspaceBattery.entitlements";
 				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -312,9 +313,6 @@
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				CODE_SIGN_STYLE = Automatic;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-
 				URL_SCHEME = "llama-dev";
 				URL_SCHEME_ALT = "llamabarn-dev";
 			};
@@ -326,7 +324,7 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_ENTITLEMENTS = "Llama/WorkspaceBattery.entitlements";
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -360,7 +358,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		156891972E2685F700F71BD4 /* Build configuration list for PBXProject "Llama" */ = {
+		156891972E2685F700F71BD4 /* Build configuration list for PBXProject "workspace-battery" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				156891A62E2685F900F71BD4 /* Debug */,
