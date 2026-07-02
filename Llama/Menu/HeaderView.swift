@@ -36,7 +36,7 @@ final class HeaderView: ItemView {
 
     // Restart icon -- shown briefly while server is restarting
     Theme.configure(restartIcon, symbol: "arrow.trianglehead.2.clockwise", pointSize: 11)
-    restartIcon.contentTintColor = NSColor.linkColor
+    restartIcon.contentTintColor = NSColor.labelColor
     restartIcon.isHidden = true
 
     // Title stack for horizontal layout of app name and restart icon
@@ -72,9 +72,11 @@ final class HeaderView: ItemView {
     // Open Workspace Button Configuration
     openWorkspaceButton.attributedTitle = NSAttributedString(
       string: "Open Workspace",
-      attributes: Theme.secondaryAttributes(color: NSColor.linkColor)
+      attributes: Theme.secondaryAttributes(color: NSColor.labelColor)
     )
-    openWorkspaceButton.bezelStyle = .inline
+      
+      
+    openWorkspaceButton.bezelStyle = .badge
     openWorkspaceButton.isBordered = false
     openWorkspaceButton.wantsLayer = true
     openWorkspaceButton.layer?.cornerRadius = 5

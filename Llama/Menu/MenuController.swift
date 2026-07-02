@@ -450,10 +450,10 @@ final class MenuController: NSObject, NSMenuDelegate {
     }
 
     // "Installed" header with a link to the running server's /models endpoint
-    let host = LlamaServer.resolvedHost
-    let modelsUrl = URL(string: "http://\(host):\(LlamaServer.port)/models")
-    let header = SectionHeaderView(title: "Installed", linkText: "models", linkUrl: modelsUrl)
-    menu.addItem(NSMenuItem.viewItem(with: header))
+    // let host = LlamaServer.resolvedHost
+    // let modelsUrl = URL(string: "http://\(host):\(LlamaServer.port)/models")
+    // let header = SectionHeaderView(title: "Installed", linkText: "models", linkUrl: modelsUrl)
+    // menu.addItem(NSMenuItem.viewItem(with: header))
 
     // Progressive disclosure: a long list pushes the footer (Settings/Quit) past
     // the bottom of the screen, so when collapsed we show only the first
