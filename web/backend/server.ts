@@ -70,7 +70,7 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.use(express.json({ limit: "100mb" }));
+app.use(express.json({ limit: "4096MB" }));
 
 // ---------------------------------------------------------------------------
 // API — proxy to llama-server
@@ -111,132 +111,6 @@ app.get("/api/status", async (_req: Request, res: Response) => {
     }
   } catch {
     res.json({ status: "ok", llama: false });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// API — streaming chat endpoint (Server-Sent Events)
-// ---------------------------------------------------------------------------
-// Proxies the llama-server's streaming chat completions endpoint and
-// forwards each SSE chunk to the browser in real time.
-
-app.post("/api/chat/stream", async (req: Request, res: Response) => {
-  const { model, messages } = req.body as {
-    model?: unknown;
-    messages?: unknown;
-  };
-  if (!model || !messages) {
-    res.status(400).json({ error: "model and messages are required" });
-    return;
-  }
-
-  // SSE headers — tell the browser to keep the connection open
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-
-  try {
-    const resp = await fetch(`${LLAMA_HOST}/v1/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        messages,
-        stream: true,
-      }),
-      signal: AbortSignal.timeout(600_000),
-    });
-
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "Unknown error");
-      res.write(
-        `data: ${JSON.stringify({ error: `${resp.status} — ${errText}` })}\n\n`,
-      );
-      res.end();
-      return;
-    }
-
-    // Read the upstream SSE stream chunk by chunk and forward each event
-    const reader = resp.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-
-      // Split on each SSE message boundary (\n\n) and process complete events
-      const parts = buffer.split("\n\n");
-      buffer = parts.pop() || "";
-
-      for (const part of parts) {
-        if (!part.trim()) continue;
-        for (const line of part.split("\n")) {
-          if (line.startsWith("data: ")) {
-            res.write(line + "\n\n");
-          }
-        }
-      }
-    }
-
-    // Flush any remaining data in the buffer
-    if (buffer.trim()) {
-      for (const line of buffer.split("\n")) {
-        if (line.startsWith("data: ")) {
-          res.write(line + "\n\n");
-        }
-      }
-    }
-
-    // Signal the end of the stream
-    res.write("data: [DONE]\n\n");
-    res.end();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
-    res.write("data: [DONE]\n\n");
-    res.end();
-  }
-});
-
-// ---------------------------------------------------------------------------
-// API — open proxy endpoint (passthrough to llama-server)
-// ---------------------------------------------------------------------------
-
-app.use("/api/proxy", async (req: Request, res: Response) => {
-  // req.url is relative to the mount point, includes query string
-  const targetUrl = `${LLAMA_HOST}${req.url}`;
-
-  try {
-    const options: RequestInit = {
-      method: req.method,
-      headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(600_000),
-    };
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      options.body = JSON.stringify(req.body);
-    }
-
-    const resp = await fetch(targetUrl, options);
-    const data = await resp.text();
-
-    // Try to parse as JSON for pretty response; fall back to raw text.
-    let payload: unknown;
-    try {
-      payload = JSON.parse(data);
-    } catch {
-      payload = data;
-    }
-
-    res.status(resp.status).json(payload);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    res.status(502).json({
-      error: `llama-server proxy failed: ${message}`,
-    });
   }
 });
 
