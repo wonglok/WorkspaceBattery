@@ -1,15 +1,15 @@
 import Foundation
 import os.log
 
-/// Manages the Node.js web server process lifecycle.
+/// Manages the Bun web server process lifecycle.
 ///
 /// The web server provides a management UI and API proxy for llama-server.
 /// It runs as a child process alongside the app and is managed independently
 /// of the llama-server (it can be started/stopped separately).
 ///
-/// The Node.js runtime is bundled in the app as `Resources/node`. During
+/// The Bun runtime is bundled in the app as `Resources/bun`. During
 /// development (when running from Xcode or the source tree), the manager
-/// falls back to the system-installed Node.js if the bundled binary is
+/// falls back to the system-installed Bun if the bundled binary is
 /// not available at the expected path.
 @MainActor
 class WebServerManager {
@@ -21,21 +21,21 @@ class WebServerManager {
   /// The port the web server listens on.
   nonisolated static var port: Int { UserSettings.webServerPort ?? defaultPort }
 
-  /// The bundled Node.js binary, or nil if not found.
+  /// The bundled Bun binary, or nil if not found.
   /// Search order:
-  ///   1. App bundle Resources (production: Llama.app/Contents/Resources/node)
-  ///   2. Source tree web/bin/node (development)
-  ///   3. System PATH `which node` (fallback)
-  private var bundledNodePath: URL? {
+  ///   1. App bundle Resources (production: Llama.app/Contents/Resources/bun)
+  ///   2. Source tree web/bin/bun (development)
+  ///   3. System PATH `which bun` (fallback)
+  private var bundledBunPath: URL? {
     // 1. Check app bundle Resources
-    if let resource = Bundle.main.url(forResource: "node", withExtension: nil),
+    if let resource = Bundle.main.url(forResource: "bun", withExtension: nil),
       FileManager.default.isExecutableFile(atPath: resource.path)
     {
       return resource
     }
 
-    // 2. Check web/bin/node next to the project (development from Xcode)
-    let srcPath = webDir.appendingPathComponent("bin/node")
+    // 2. Check web/bin/bun next to the project (development from Xcode)
+    let srcPath = webDir.appendingPathComponent("bin/bun")
     if FileManager.default.isExecutableFile(atPath: srcPath.path) {
       return srcPath
     }
@@ -43,7 +43,7 @@ class WebServerManager {
     // 3. Fallback: check PATH
     let which = Process()
     which.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-    which.arguments = ["which", "node"]
+    which.arguments = ["which", "bun"]
     let outPipe = Pipe()
     which.standardOutput = outPipe
     which.standardError = Pipe()
@@ -76,7 +76,7 @@ class WebServerManager {
   }
 
   private init() {
-    // The web directory (server.js, public/, node_modules) — try several locations
+    // The web directory (server.ts, public/, node_modules) — try several locations
     // depending on whether we're running from the app bundle or from source.
 
     let candidates: [URL?] = [
@@ -96,7 +96,7 @@ class WebServerManager {
     var found: URL?
     for candidate in candidates {
       guard let candidate else { continue }
-      let testPath = candidate.appendingPathComponent("server.js").path
+      let testPath = candidate.appendingPathComponent("server.ts").path
       if FileManager.default.fileExists(atPath: testPath) {
         found = candidate
         break
@@ -108,7 +108,7 @@ class WebServerManager {
       var candidate = Bundle.main.executableURL?.deletingLastPathComponent()
       while let dir = candidate, dir.path != "/" {
         let testDir = dir.appendingPathComponent("web")
-        if FileManager.default.fileExists(atPath: testDir.appendingPathComponent("server.js").path) {
+        if FileManager.default.fileExists(atPath: testDir.appendingPathComponent("server.ts").path) {
           found = testDir
           break
         }
@@ -122,10 +122,10 @@ class WebServerManager {
   /// Returns the path to the web directory.
   var webDirectory: URL { webDir }
 
-  /// Whether the Node.js web server is currently running.
+  /// Whether the Bun web server is currently running.
   var isRunning: Bool { process != nil && process!.isRunning }
 
-  /// Starts the Node.js web server as a child process.
+  /// Starts the Bun web server as a child process.
   /// Returns immediately; the server starts asynchronously.
   func start() {
     guard process == nil || !process!.isRunning else {
@@ -133,15 +133,15 @@ class WebServerManager {
       return
     }
 
-    guard let nodePath = bundledNodePath else {
-      let msg = "Node.js not found. Install Node.js (>=18) to use the web UI, or run `scripts/download-node.sh` to bundle it."
+    guard let bunPath = bundledBunPath else {
+      let msg = "Bun not found. Install Bun (>=1.0) to use the web UI, or run `scripts/download-bun.sh` to bundle it."
       logger.error("\(msg)")
       state = .error(msg)
       return
     }
 
-    // Verify the web directory exists and has server.js
-    let serverPath = webDir.appendingPathComponent("server.js").path
+    // Verify the web directory exists and has server.ts
+    let serverPath = webDir.appendingPathComponent("server.ts").path
     guard FileManager.default.fileExists(atPath: serverPath) else {
       let msg = "Web server file not found at \(serverPath)"
       logger.error("\(msg)")
@@ -152,19 +152,19 @@ class WebServerManager {
     // Verify node_modules exist
     let nodeModulesPath = webDir.appendingPathComponent("node_modules").path
     guard FileManager.default.fileExists(atPath: nodeModulesPath) else {
-      let msg = "Node.js dependencies not installed. Run `npm install` in the web/ directory."
+      let msg = "Bun dependencies not installed. Run `bun install` in the web/ directory."
       logger.error("\(msg)")
       state = .error(msg)
       return
     }
 
     state = .starting
-    logger.info("Starting web server from \(self.webDir.path) using \(nodePath.path) on port \(Self.port)")
+    logger.info("Starting web server from \(self.webDir.path) using \(bunPath.path) on port \(Self.port)")
 
     let proc = Process()
-    proc.executableURL = nodePath
+    proc.executableURL = bunPath
     proc.arguments = [
-      serverPath,
+      "run", serverPath,
       "--port", String(Self.port),
     ]
     proc.currentDirectoryURL = webDir
