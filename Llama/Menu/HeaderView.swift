@@ -69,18 +69,12 @@ final class HeaderView: ItemView {
     // copyButton.action = #selector(copyUrl)
 
     // Open Workspace Button Configuration
-    openWorkspaceButton.attributedTitle = NSAttributedString(
-      string: "Open Workspace",
-      attributes: Theme.secondaryAttributes(color: NSColor.labelColor)
-    )
-      
-      
-    openWorkspaceButton.bezelStyle = .badge
-    openWorkspaceButton.isBordered = false
-    openWorkspaceButton.wantsLayer = true
-    openWorkspaceButton.layer?.cornerRadius = 5
-    openWorkspaceButton.layer?.borderWidth = 1
-    openWorkspaceButton.layer?.borderColor = Theme.Colors.border.cgColor
+    openWorkspaceButton.title = "Open Workspace"
+    openWorkspaceButton.bezelStyle = .rounded
+    openWorkspaceButton.isBordered = true
+      openWorkspaceButton.controlSize = .large
+    openWorkspaceButton.contentTintColor = NSColor.linkColor
+    openWorkspaceButton.font = Theme.Fonts.secondary
     openWorkspaceButton.target = self
     openWorkspaceButton.action = #selector(openWorkspaceClicked)
     openWorkspaceButton.translatesAutoresizingMaskIntoConstraints = false
