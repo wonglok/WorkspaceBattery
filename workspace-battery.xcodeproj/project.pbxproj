@@ -147,7 +147,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "# Copy web assets into the app bundle\nset -euo pipefail\n\nSRC=\"${SRCROOT}/web\"\nDST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\n\n# Copy node binary\ncp \"${SRC}/bin/node\" \"${DST}/node\"\nchmod +x \"${DST}/node\"\n\n# Copy web directory (server.js, public/, node_modules)\nrm -rf \"${DST}/web\"\nmkdir -p \"${DST}/web\"\ncp -R \"${SRC}/server.js\" \"${DST}/web/\"\ncp -R \"${SRC}/public\" \"${DST}/web/\"\ncp -R \"${SRC}/node_modules\" \"${DST}/web/\"\ncp \"${SRC}/package.json\" \"${DST}/web/\"\n";
+			shellScript = "# Copy web assets into the app bundle\nset -euo pipefail\n\nSRC=\"${SRCROOT}/web\"\nDST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\n\n# Copy bun binary\ncp \"${SRC}/bin/bun\" \"${DST}/bun\"\nchmod +x \"${DST}/bun\"\n\n# Copy node binary\ncp \"${SRC}/bin/node\" \"${DST}/node\"\nchmod +x \"${DST}/node\"\n\n# Copy web directory (server.js, public/, node_modules)\nrm -rf \"${DST}/web\"\nmkdir -p \"${DST}/web\"\ncp -R \"${SRC}/server.js\" \"${DST}/web/\"\ncp -R \"${SRC}/public\" \"${DST}/web/\"\ncp -R \"${SRC}/node_modules\" \"${DST}/web/\"\ncp \"${SRC}/package.json\" \"${DST}/web/\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
