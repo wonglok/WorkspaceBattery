@@ -4,11 +4,11 @@
 # and extracts just the `node` binary into web/bin/.
 #
 # Usage:  ./scripts/download-node.sh [version]
-#         Defaults to 22.14.0
+#         Defaults to 22.18.0
 
 set -euo pipefail
 
-VERSION="${1:-22.14.0}"
+VERSION="${1:-22.18.0}"
 ARCH=$(uname -m)
 case "$ARCH" in
   arm64)  ARCH_NAME="arm64" ;;
