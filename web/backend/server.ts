@@ -244,14 +244,14 @@ app.use("/api/proxy", async (req: Request, res: Response) => {
 // Static files — web UI
 // ---------------------------------------------------------------------------
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "..", "frontend", "dist")));
 
 // SPA fallback: serve index.html for any unmatched route (except API).
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.path.startsWith("/api/") || req.path.startsWith("/v1/")) {
     return next();
   }
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
 });
 
 // ---------------------------------------------------------------------------
@@ -259,7 +259,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ---------------------------------------------------------------------------
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Llama web server listening on http://localhost:${PORT}`);
-  console.log(`Proxying llama-server at ${LLAMA_HOST}`);
-  console.log(`UI: http://localhost:${PORT}`);
+  console.log(`AI API: ${LLAMA_HOST}`);
+  console.log(`Workspace UI: http://localhost:${PORT}`);
 });
+
+//

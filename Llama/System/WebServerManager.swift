@@ -96,7 +96,7 @@ class WebServerManager {
     var found: URL?
     for candidate in candidates {
       guard let candidate else { continue }
-      let testPath = candidate.appendingPathComponent("server.ts").path
+      let testPath = candidate.appendingPathComponent("./backend/server.ts").path
       if FileManager.default.fileExists(atPath: testPath) {
         found = candidate
         break
@@ -108,7 +108,7 @@ class WebServerManager {
       var candidate = Bundle.main.executableURL?.deletingLastPathComponent()
       while let dir = candidate, dir.path != "/" {
         let testDir = dir.appendingPathComponent("web")
-        if FileManager.default.fileExists(atPath: testDir.appendingPathComponent("server.ts").path) {
+        if FileManager.default.fileExists(atPath: testDir.appendingPathComponent("./backend/server.ts").path) {
           found = testDir
           break
         }
@@ -141,7 +141,7 @@ class WebServerManager {
     }
 
     // Verify the web directory exists and has server.ts
-    let serverPath = webDir.appendingPathComponent("server.ts").path
+    let serverPath = webDir.appendingPathComponent("./backend/server.ts").path
     guard FileManager.default.fileExists(atPath: serverPath) else {
       let msg = "Web server file not found at \(serverPath)"
       logger.error("\(msg)")

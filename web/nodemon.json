@@ -1,0 +1,16 @@
+{
+  "restartable": "rs",
+  "ignore": [".git", "node_modules/**/node_modules"],
+  "verbose": true,
+  "execMap": {
+    "ts": "bun run build; bun run ./backend/server.ts"
+  },
+  "events": {
+    "restart": "osascript -e 'display notification \"App restarted due to:\n'$FILENAME'\" with title \"nodemon\"'"
+  },
+  "watch": ["./backend"],
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "ext": "js,json,ts,tsx"
+}
