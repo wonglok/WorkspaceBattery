@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "battery-charging-icon 2.png",
+      "filename" : "electric-vehicle-charging-station-icon.png",
       "idiom" : "universal"
     }
   ],
@@ -10,6 +10,8 @@
     "version" : 1
   },
   "properties" : {
-    "template-rendering-intent" : "template"
+    "compression-type" : "automatic",
+    "preserves-vector-representation" : true,
+    "template-rendering-intent" : "original"
   }
 }
