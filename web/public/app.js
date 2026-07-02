@@ -302,27 +302,19 @@ function addMessage(role, content) {
 }
 
 function formatMessage(text) {
-  // Simple markdown rendering
+  // Escape HTML, then apply simple markdown
   let html = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/```(\w*)\n([\s\S]*?)```/g, "<pre><code>$2</code></pre>")
+    .replace(/```(\w*)\n?([\s\S]*?)```/g, "<pre><code>$2</code></pre>")
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br>");
-
   return html;
 }
 
-function addTypingIndicator() {
-  const msg = document.createElement("div");
-  msg.className = "message assistant typing";
-  msg.innerHTML = `<span class="dots"></span>`;
-  dom.chatMessages.appendChild(msg);
-  dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
-  return msg;
-}
+// ── Streaming chat (SSE) ──────────────────────────────────────────────────
 
 async function sendMessage() {
   const text = dom.chatInput.value.trim();
@@ -337,45 +329,75 @@ async function sendMessage() {
 
   addMessage("user", text);
 
-  const typingMsg = addTypingIndicator();
+  // Create the assistant message element (will fill incrementally as tokens arrive)
+  const assistantMsg = document.createElement("div");
+  assistantMsg.className = "message assistant";
+  dom.chatMessages.appendChild(assistantMsg);
+  dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
 
   abortController = new AbortController();
+  let fullContent = "";
 
   try {
-    const resp = await fetch(
-      `${LLAMA_HOST()}/v1/chat/completions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: STATE.activeModelId,
-          messages: [
-            {
-              role: "user",
-              content: text,
-            },
-          ],
-          stream: false,
-        }),
-        signal: abortController.signal,
-      }
-    );
-
-    typingMsg.remove();
+    const resp = await fetch("/api/chat/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: STATE.activeModelId,
+        messages: [{ role: "user", content: text }],
+      }),
+      signal: abortController.signal,
+    });
 
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "Unknown error");
-      addMessage("assistant", `Error: ${resp.status} — ${errText}`);
+      assistantMsg.innerHTML = `Error: ${resp.status} — ${errText}`;
       return;
     }
 
-    const data = await resp.json();
-    const reply = data.choices?.[0]?.message?.content || "No response";
-    addMessage("assistant", reply);
+    // Read the SSE response body as a stream
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Split on SSE message boundaries (\n\n)
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
+
+      for (const part of parts) {
+        if (!part.trim()) continue;
+
+        // Each part may have multiple "data:" lines — find the last one
+        const lines = part.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content || "";
+              if (delta) {
+                fullContent += delta;
+                assistantMsg.innerHTML = formatMessage(fullContent);
+                dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
+              }
+            } catch {
+              // skip malformed JSON chunks
+            }
+          }
+        }
+      }
+    }
   } catch (err) {
-    typingMsg.remove();
     if (err.name !== "AbortError") {
-      addMessage("assistant", `Error: ${err.message}`);
+      assistantMsg.innerHTML = `Error: ${err.message}`;
     }
   } finally {
     abortController = null;
@@ -406,6 +428,12 @@ dom.navItems.forEach((item) => {
     Object.values(dom.views).forEach((v) => v.classList.remove("active"));
     dom.views[view].classList.add("active");
   });
+});
+
+// ── Open Workspace ─────────────────────────────────────────────────────────
+
+document.getElementById("openWorkspaceBtn").addEventListener("click", () => {
+  window.open(`http://localhost:${dom.webPort.value}`, "_blank", "noopener,noreferrer");
 });
 
 // ── Event bindings ──────────────────────────────────────────────────────────

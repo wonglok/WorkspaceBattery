@@ -111,7 +111,7 @@ enum UserSettings {
   }
 
 
-  /// The port for the web server UI, or nil to use the default (8331).
+  /// The port for the web server UI, or nil to use the default (8333).
   static var webServerPort: Int? {
     get {
       let value = defaults.integer(forKey: Keys.webServerPort)

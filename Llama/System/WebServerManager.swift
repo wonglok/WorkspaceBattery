@@ -16,7 +16,7 @@ class WebServerManager {
   static let shared = WebServerManager()
 
   /// Default port for the web server.
-  nonisolated static let defaultPort = 8331
+  nonisolated static let defaultPort = 8333
 
   /// The port the web server listens on.
   nonisolated static var port: Int { UserSettings.webServerPort ?? defaultPort }

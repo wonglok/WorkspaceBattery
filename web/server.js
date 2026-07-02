@@ -10,7 +10,7 @@ const express = require("express");
 const path = require("path");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
-const PORT = parseInt(process.env.PORT, 10) || 8331;
+const PORT = parseInt(process.env.PORT, 10) || 8333;
 const LLAMA_HOST = process.env.LLAMA_HOST || "http://localhost:8080";
 
 const app = express();
@@ -22,7 +22,7 @@ const app = express();
 // abnormally) this child process becomes an orphan.  Watch the parent PID
 // every 3 seconds and exit if it's gone, so we never leave a stray server
 // holding the port.
-const PPID = process.ppid;
+const PPID = process.env.DISABLE_WATCHDOG ? null : process.ppid;
 if (PPID) {
   const watchdog = setInterval(() => {
     try {
@@ -40,6 +40,22 @@ if (PPID) {
 // ---------------------------------------------------------------------------
 // Middleware
 // ---------------------------------------------------------------------------
+
+// CORS — allow cross-origin requests from any origin so that browser-based
+// tools and other apps on the LAN can call the API.
+app.use((_req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Type");
+
+  if (_req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+});
 
 app.use(express.json({ limit: "100mb" }));
 
@@ -84,8 +100,87 @@ app.get("/api/status", async (_req, res) => {
     res.json({ status: "ok", llama: false });
   }
 });
-
 // ---------------------------------------------------------------------------
+
+// API — streaming chat endpoint (Server-Sent Events)
+// ---------------------------------------------------------------------------
+// Proxies the llama-server's streaming chat completions endpoint and
+// forwards each SSE chunk to the browser in real time.
+
+app.post('/api/chat/stream', async (req, res) => {
+  const { model, messages } = req.body;
+  if (!model || !messages) {
+    return res.status(400).json({ error: 'model and messages are required' });
+  }
+
+  // SSE headers — tell the browser to keep the connection open
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  try {
+    const resp = await fetch(`${LLAMA_HOST}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: messages,
+        stream: true,
+      }),
+      signal: AbortSignal.timeout(600_000),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => 'Unknown error');
+      res.write(`data: ${JSON.stringify({ error: `${resp.status} \u2014 ${errText}` })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Read the upstream SSE stream chunk by chunk and forward each event
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Split on each SSE message boundary (\n\n) and process complete events
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || '';
+
+      for (const part of parts) {
+        if (!part.trim()) continue;
+        for (const line of part.split('\n')) {
+          if (line.startsWith('data: ')) {
+            res.write(line + '\n\n');
+          }
+        }
+      }
+    }
+
+    // Flush any remaining data in the buffer
+    if (buffer.trim()) {
+      for (const line of buffer.split('\n')) {
+        if (line.startsWith('data: ')) {
+          res.write(line + '\n\n');
+        }
+      }
+    }
+
+    // Signal the end of the stream
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err) {
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
+  }
+});
 // API — open proxy endpoint (passthrough to llama-server)
 // ---------------------------------------------------------------------------
 
@@ -140,7 +235,7 @@ app.use((req, res, next) => {
 // Start
 // ---------------------------------------------------------------------------
 
-app.listen(PORT, "127.0.0.1", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Llama web server listening on http://localhost:${PORT}`);
   console.log(`Proxying llama-server at ${LLAMA_HOST}`);
   console.log(`Web UI: http://localhost:${PORT}`);

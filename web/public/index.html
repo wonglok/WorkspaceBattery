@@ -9,7 +9,6 @@
 </head>
 
 <body>
-  hi
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h1>WorkspaceBattery</h1>
@@ -36,6 +35,15 @@
           <line x1="12" y1="22.08" x2="12" y2="12" />
         </svg>
         Models
+      </button>
+      <button class="nav-item" id="openWorkspaceBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+        Open Workspace
       </button>
       <button class="nav-item" data-view="settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -115,7 +123,7 @@
           </div>
           <div class="setting-row">
             <label for="webPort">Web UI port</label>
-            <input type="number" id="webPort" value="8331" min="1024" max="65535" class="setting-input">
+            <input type="number" id="webPort" value="8333" min="1024" max="65535" class="setting-input">
           </div>
         </section>
         <section class="settings-section">
