@@ -135,6 +135,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`AI API: ${LLAMA_HOST}`);
   console.log(`Workspace UI: http://localhost:${PORT}`);
+  console.log(`Workspace Vite (develoment): http://localhost:5173`);
 });
 
 //
