@@ -229,7 +229,7 @@ export function ChatInput({
         <button
           onClick={() => imageInputRef.current?.click()}
           disabled={isStreaming}
-          className="rounded-xl p-2 text-ink-faint/30 transition-all duration-300 hover:text-gold/60 hover:bg-white/40 disabled:opacity-30"
+          className="rounded-xl p-2 text-ink-faint/60 transition-all duration-300 hover:text-gold/60 hover:bg-white/40 disabled:opacity-30"
           title="Attach image"
         >
           <svg
@@ -257,7 +257,7 @@ export function ChatInput({
         <button
           onClick={() => audioInputRef.current?.click()}
           disabled={isStreaming}
-          className="rounded-xl p-2 text-ink-faint/30 transition-all duration-300 hover:text-gold/60 hover:bg-white/40 disabled:opacity-30"
+          className="rounded-xl p-2 text-ink-faint/60 transition-all duration-300 hover:text-gold/60 hover:bg-white/40 disabled:opacity-30"
           title="Attach audio"
         >
           <svg
@@ -289,7 +289,7 @@ export function ChatInput({
             className={`rounded-xl p-2 transition-all duration-300 disabled:opacity-30 ${
               voice.isRecording
                 ? "bg-rose/40 text-rose-deep shadow-[0_0_16px_rgba(196,160,154,0.2)]"
-                : "text-ink-faint/30 hover:text-rose/50 hover:bg-white/40"
+                : "text-ink-faint/60 hover:text-rose/50 hover:bg-white/40"
             }`}
             title={
               voice.isRecording
@@ -342,10 +342,9 @@ export function ChatInput({
             disabled={!text.trim() && !imageBase64 && !audioBase64}
             className="rounded-xl p-2 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
-              background:
-                "linear-gradient(135deg, rgba(200,168,78,0.7), rgba(180,148,58,0.8))",
+              background: "linear-gradient(135deg, #c8a84e 0%, #a6802e 100%)",
               color: "#faf7f2",
-              boxShadow: "0 2px 12px rgba(200,168,78,0.2)",
+              boxShadow: "0 2px 12px rgba(168,128,46,0.3)",
             }}
             title="Send message"
           >
