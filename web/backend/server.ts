@@ -24,6 +24,7 @@ import { homedir } from "os";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { setupProactive } from "./src/proactive";
 
 const PORT = parseInt(process.env.PORT ?? "", 10) || 8333;
 const LLAMA_HOST = process.env.LLAMA_HOST || "http://localhost:8222";
@@ -228,9 +229,30 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "getConversationImage",
+      description:
+        "get the image in the convesation by message index start from index 0.",
+      parameters: {
+        type: "object",
+        properties: {
+          index: {
+            type: "string",
+            description:
+              "get the image in the convesation by message index start from index 0, default 0",
+          },
+        },
+        required: [],
+      },
+    },
+  },
+
+  //
 ];
 
-const MAX_ITERATIONS = 25;
+const MAX_ITERATIONS = 250;
 
 function safeResolve(workspaceRoot: string, relativePath: string): string {
   const resolved = resolve(workspaceRoot, normalize(relativePath));
@@ -247,6 +269,7 @@ function executeTool(
   name: string,
   input: Record<string, unknown>,
   workspaceRoot: string,
+  registry?: Map,
 ): string {
   switch (name) {
     case "readFile": {
@@ -259,6 +282,13 @@ function executeTool(
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       writeFileSync(filePath, input.content as string, "utf-8");
       return `File written: ${input.path}`;
+    }
+    case "listDir": {
+      const dirPath = safeResolve(workspaceRoot, (input.path as string) || "");
+      const entries = readdirSync(dirPath, { withFileTypes: true });
+      return entries
+        .map((e) => `${e.isDirectory() ? "📁" : "📄"} ${e.name}`)
+        .join("\n");
     }
     case "listDir": {
       const dirPath = safeResolve(workspaceRoot, (input.path as string) || "");
@@ -290,10 +320,23 @@ app.post("/api/chat", async (req: Request, res: Response) => {
   }
 
   const workspaceRoot = workspace;
+
   console.log(workspaceRoot);
   if (!existsSync(workspaceRoot)) {
     res.status(400).json({ error: `Workspace not found: ${workspaceRoot}` });
     return;
+  }
+
+  // Load workspace memory file if present
+  let workspaceMemory = "";
+  const memoryFile = resolve(workspaceRoot, "system_memory.md");
+  if (existsSync(memoryFile)) {
+    try {
+      workspaceMemory = readFileSync(memoryFile, "utf-8").trim();
+      console.log(`Loaded workspace memory: ${memoryFile}`);
+    } catch {
+      // ignore unreadable memory files
+    }
   }
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -304,14 +347,27 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 
   const client = new OpenAI({ baseURL: `${LLAMA_HOST}/v1`, apiKey: "none" });
 
-  const systemPrompt = `You are a workspace AI assistant with access to the workspace at: ${workspaceRoot}
+  const registry = new Map();
 
-You have the following tools:
-- readFile(path): Read file contents (relative to workspace root)
-- writeFile(path, content): Write content to a file. Creates parent directories automatically.
-- listDir(path): List files and directories (relative to workspace root, default: root)
-
-Always explain what you're doing before using a tool. Be concise.`;
+  const systemPrompt = [
+    `You are a workspace AI assistant with access to the workspace at: ${workspaceRoot}`,
+    `Today is: ${new Date().toISOString()}`,
+    ``,
+    `You have the following tools:`,
+    `- readFile(path): Read file contents (relative to workspace root)`,
+    `- writeFile(path, content): Write content to a file. Creates parent directories automatically.`,
+    `- listDir(path): List files and directories (relative to workspace root, default: root)`,
+    `- getConversationImage(idx): get the image in the convesation by message index start from index 0`,
+    ``,
+    `Always explain what you're doing before using a tool. Be concise.`,
+    workspaceMemory ? `\n## My System Memory:\n\n${workspaceMemory}` : "",
+    `
+    Always listDir of the workspace and see all the files, check to see if you have any ./diary/*.md
+    You can read the suitable file to understand the mood of the user.
+    `,
+  ]
+    .join("\n")
+    .trim();
 
   const conversation: ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
@@ -321,6 +377,24 @@ Always explain what you're doing before using a tool. Be concise.`;
     })),
   ];
 
+  let images = [];
+  let idx = 0;
+  for (let message of conversation) {
+    if (message.content instanceof Array) {
+      for (let eachItem of message.content) {
+        if (eachItem.type === "image_url") {
+          if (eachItem.image_url) {
+            images.push({
+              index: idx,
+              image_url: eachItem,
+            });
+          }
+        }
+      }
+    }
+    idx++;
+  }
+
   try {
     let naturalStop = false;
     for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -329,6 +403,7 @@ Always explain what you're doing before using a tool. Be concise.`;
         messages: conversation,
         tools: TOOLS,
         stream: true,
+        reasoning_effort: "high",
       });
 
       let content = "";
@@ -422,7 +497,7 @@ Always explain what you're doing before using a tool. Be concise.`;
 
         let output: string;
         try {
-          output = executeTool(tc.name, input, workspaceRoot);
+          output = executeTool(tc.name, input, workspaceRoot, registry);
         } catch (err) {
           output = `Error: ${err instanceof Error ? err.message : String(err)}`;
         }
@@ -466,6 +541,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     return next();
   }
   res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
+});
+
+setTimeout(() => {
+  setupProactive();
 });
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,10 @@
 /* Design Tokens — Renaissance Dawn                                    */
 /* ------------------------------------------------------------------ */
 
+hr {
+  margin: 15px 0px;
+}
+
 @theme {
   --font-display: "Playfair Display", Georgia, serif;
   --font-body: "Lora", Georgia, serif;
@@ -33,7 +37,9 @@
 /* Base & Atmosphere                                                   */
 /* ------------------------------------------------------------------ */
 
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -70,16 +76,36 @@ body::before {
     /* Large slow particles */
     radial-gradient(2px 2px at 10% 20%, rgba(200, 168, 78, 0.5), transparent),
     radial-gradient(3px 3px at 25% 65%, rgba(200, 168, 78, 0.35), transparent),
-    radial-gradient(1.5px 1.5px at 85% 15%, rgba(200, 168, 78, 0.6), transparent),
-    radial-gradient(2.5px 2.5px at 70% 75%, rgba(200, 168, 78, 0.4), transparent),
+    radial-gradient(
+      1.5px 1.5px at 85% 15%,
+      rgba(200, 168, 78, 0.6),
+      transparent
+    ),
+    radial-gradient(
+      2.5px 2.5px at 70% 75%,
+      rgba(200, 168, 78, 0.4),
+      transparent
+    ),
     radial-gradient(1px 1px at 40% 35%, rgba(200, 168, 78, 0.55), transparent),
     radial-gradient(2px 2px at 55% 80%, rgba(200, 168, 78, 0.3), transparent),
     radial-gradient(3px 3px at 15% 50%, rgba(200, 168, 78, 0.45), transparent),
-    radial-gradient(1.5px 1.5px at 90% 40%, rgba(200, 168, 78, 0.5), transparent),
+    radial-gradient(
+      1.5px 1.5px at 90% 40%,
+      rgba(200, 168, 78, 0.5),
+      transparent
+    ),
     radial-gradient(2px 2px at 60% 10%, rgba(200, 168, 78, 0.35), transparent),
     radial-gradient(1px 1px at 5% 85%, rgba(200, 168, 78, 0.5), transparent),
-    radial-gradient(2.5px 2.5px at 35% 90%, rgba(200, 168, 78, 0.4), transparent),
-    radial-gradient(1.5px 1.5px at 75% 55%, rgba(200, 168, 78, 0.45), transparent),
+    radial-gradient(
+      2.5px 2.5px at 35% 90%,
+      rgba(200, 168, 78, 0.4),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 75% 55%,
+      rgba(200, 168, 78, 0.45),
+      transparent
+    ),
     /* Extra tiny sparkles */
     radial-gradient(1px 1px at 20% 10%, rgba(255, 255, 255, 0.7), transparent),
     radial-gradient(1px 1px at 48% 30%, rgba(255, 255, 255, 0.6), transparent),
@@ -91,7 +117,8 @@ body::before {
 }
 
 @keyframes particleDrift {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
     transform: translateY(0) scale(1);
   }
@@ -126,7 +153,11 @@ body::before {
 .cloud-wisp-1 {
   width: 400px;
   height: 200px;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,0.5), transparent);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
   top: -5%;
   left: -10%;
   animation-duration: 45s;
@@ -136,7 +167,11 @@ body::before {
 .cloud-wisp-2 {
   width: 350px;
   height: 180px;
-  background: radial-gradient(ellipse at center, rgba(232, 212, 208, 0.4), transparent);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(232, 212, 208, 0.4),
+    transparent
+  );
   top: 15%;
   right: -8%;
   animation-duration: 55s;
@@ -146,7 +181,11 @@ body::before {
 .cloud-wisp-3 {
   width: 300px;
   height: 160px;
-  background: radial-gradient(ellipse at center, rgba(212, 219, 232, 0.45), transparent);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(212, 219, 232, 0.45),
+    transparent
+  );
   bottom: 10%;
   left: 20%;
   animation-duration: 50s;
@@ -156,7 +195,11 @@ body::before {
 .cloud-wisp-4 {
   width: 380px;
   height: 190px;
-  background: radial-gradient(ellipse at center, rgba(233, 228, 240, 0.35), transparent);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(233, 228, 240, 0.35),
+    transparent
+  );
   top: 40%;
   left: -5%;
   animation-duration: 60s;
@@ -164,8 +207,12 @@ body::before {
 }
 
 @keyframes cloudDrift {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(calc(100vw + 500px)); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(100vw + 500px));
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -254,7 +301,8 @@ body::before {
 /* ------------------------------------------------------------------ */
 
 @keyframes goldShimmer {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
