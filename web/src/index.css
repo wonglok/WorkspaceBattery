@@ -1,1 +1,326 @@
 @import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design Tokens — Renaissance Dawn                                    */
+/* ------------------------------------------------------------------ */
+
+@theme {
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Cormorant Garamond", "Times New Roman", serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+
+  --color-pearl: #faf7f2;
+  --color-pearl-dim: #f0ebe0;
+  --color-parchment: #f5edd8;
+  --color-champagne: #f2e8d5;
+  --color-rose: #e8d5d0;
+  --color-rose-deep: #c4a09a;
+  --color-gold: #c8a84e;
+  --color-gold-light: #e4d5a7;
+  --color-gold-pale: #f0e8cc;
+  --color-sky: #d4dbe8;
+  --color-sky-soft: #e8ecf4;
+  --color-sky-wash: #dfe6f2;
+  --color-cloud: #f4f1f0;
+  --color-ink: #3d3530;
+  --color-ink-soft: #6b5e58;
+  --color-ink-faint: #9e9089;
+  --color-dawn: #f6efe5;
+  --color-lavender-mist: #e9e4f0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Base & Atmosphere                                                   */
+/* ------------------------------------------------------------------ */
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: linear-gradient(
+    170deg,
+    #faf7f2 0%,
+    #f6efe5 15%,
+    #f2e8e0 30%,
+    #eef0f5 50%,
+    #f0e8e2 65%,
+    #f5eee5 80%,
+    #faf6f0 100%
+  );
+  background-attachment: fixed;
+}
+
+/* ------------------------------------------------------------------ */
+/* Floating Luminous Particles                                        */
+/* ------------------------------------------------------------------ */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    /* Large slow particles */
+    radial-gradient(2px 2px at 10% 20%, rgba(200, 168, 78, 0.5), transparent),
+    radial-gradient(3px 3px at 25% 65%, rgba(200, 168, 78, 0.35), transparent),
+    radial-gradient(1.5px 1.5px at 85% 15%, rgba(200, 168, 78, 0.6), transparent),
+    radial-gradient(2.5px 2.5px at 70% 75%, rgba(200, 168, 78, 0.4), transparent),
+    radial-gradient(1px 1px at 40% 35%, rgba(200, 168, 78, 0.55), transparent),
+    radial-gradient(2px 2px at 55% 80%, rgba(200, 168, 78, 0.3), transparent),
+    radial-gradient(3px 3px at 15% 50%, rgba(200, 168, 78, 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 90% 40%, rgba(200, 168, 78, 0.5), transparent),
+    radial-gradient(2px 2px at 60% 10%, rgba(200, 168, 78, 0.35), transparent),
+    radial-gradient(1px 1px at 5% 85%, rgba(200, 168, 78, 0.5), transparent),
+    radial-gradient(2.5px 2.5px at 35% 90%, rgba(200, 168, 78, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 75% 55%, rgba(200, 168, 78, 0.45), transparent),
+    /* Extra tiny sparkles */
+    radial-gradient(1px 1px at 20% 10%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 48% 30%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 65% 70%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(1px 1px at 82% 22%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 12% 72%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 38% 55%, rgba(255, 255, 255, 0.7), transparent);
+  animation: particleDrift 20s ease-in-out infinite;
+}
+
+@keyframes particleDrift {
+  0%, 100% {
+    opacity: 0.7;
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-3px) scale(0.95);
+  }
+  75% {
+    opacity: 0.9;
+    transform: translateY(-12px) scale(1.05);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Drifting Cloud Wisps                                                */
+/* ------------------------------------------------------------------ */
+
+.cloud-wisp {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.25;
+  animation: cloudDrift linear infinite;
+}
+
+.cloud-wisp-1 {
+  width: 400px;
+  height: 200px;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.5), transparent);
+  top: -5%;
+  left: -10%;
+  animation-duration: 45s;
+  animation-delay: 0s;
+}
+
+.cloud-wisp-2 {
+  width: 350px;
+  height: 180px;
+  background: radial-gradient(ellipse at center, rgba(232, 212, 208, 0.4), transparent);
+  top: 15%;
+  right: -8%;
+  animation-duration: 55s;
+  animation-delay: -12s;
+}
+
+.cloud-wisp-3 {
+  width: 300px;
+  height: 160px;
+  background: radial-gradient(ellipse at center, rgba(212, 219, 232, 0.45), transparent);
+  bottom: 10%;
+  left: 20%;
+  animation-duration: 50s;
+  animation-delay: -28s;
+}
+
+.cloud-wisp-4 {
+  width: 380px;
+  height: 190px;
+  background: radial-gradient(ellipse at center, rgba(233, 228, 240, 0.35), transparent);
+  top: 40%;
+  left: -5%;
+  animation-duration: 60s;
+  animation-delay: -40s;
+}
+
+@keyframes cloudDrift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(100vw + 500px)); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Frosted Glass Utility                                               */
+/* ------------------------------------------------------------------ */
+
+.glass {
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  background: rgba(250, 247, 242, 0.55);
+  border: 1px solid rgba(200, 168, 78, 0.15);
+  box-shadow:
+    0 4px 24px rgba(61, 53, 48, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glass-strong {
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  background: rgba(250, 247, 242, 0.7);
+  border: 1px solid rgba(200, 168, 78, 0.2);
+  box-shadow:
+    0 8px 40px rgba(61, 53, 48, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ------------------------------------------------------------------ */
+/* Gold Filigree Decorations                                           */
+/* ------------------------------------------------------------------ */
+
+.filigree-border {
+  position: relative;
+}
+
+.filigree-border::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(200, 168, 78, 0.1) 10%,
+    rgba(200, 168, 78, 0.35) 30%,
+    rgba(200, 168, 78, 0.5) 50%,
+    rgba(200, 168, 78, 0.35) 70%,
+    rgba(200, 168, 78, 0.1) 90%,
+    transparent 100%
+  );
+}
+
+.filigree-corner {
+  position: relative;
+}
+
+.filigree-corner::before,
+.filigree-corner::after {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.filigree-corner::before {
+  top: -2px;
+  left: -2px;
+  border-top: 1px solid rgba(200, 168, 78, 0.3);
+  border-left: 1px solid rgba(200, 168, 78, 0.3);
+  border-radius: 8px 0 0 0;
+}
+
+.filigree-corner::after {
+  bottom: -2px;
+  right: -2px;
+  border-bottom: 1px solid rgba(200, 168, 78, 0.3);
+  border-right: 1px solid rgba(200, 168, 78, 0.3);
+  border-radius: 0 0 8px 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Gold Shimmer Animation                                              */
+/* ------------------------------------------------------------------ */
+
+@keyframes goldShimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    135deg,
+    #c8a84e 0%,
+    #e4d5a7 25%,
+    #f0e8cc 40%,
+    #c8a84e 50%,
+    #e4d5a7 75%,
+    #c8a84e 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: goldShimmer 4s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* Manuscript Drop Cap (first message ornament)                        */
+/* ------------------------------------------------------------------ */
+
+.drop-cap::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  line-height: 0.8;
+  padding-right: 8px;
+  padding-top: 4px;
+  color: var(--color-gold);
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* ------------------------------------------------------------------ */
+/* Scrollbar — Ethereal                                                */
+/* ------------------------------------------------------------------ */
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 78, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 168, 78, 0.4);
+}
+
+/* ------------------------------------------------------------------ */
+/* Selection                                                           */
+/* ------------------------------------------------------------------ */
+
+::selection {
+  background: rgba(200, 168, 78, 0.25);
+  color: var(--color-ink);
+}

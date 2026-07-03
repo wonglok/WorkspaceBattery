@@ -31,144 +31,260 @@ export function ChatScreen({ workspacePath }: Props) {
       : workspacePath;
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-950">
+    <div
+      className="relative flex h-screen flex-col overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(170deg, #faf7f2 0%, #f6efe5 15%, #f2e8e0 30%, #eef0f5 50%, #f0e8e2 65%, #f5eee5 80%, #faf6f0 100%)",
+      }}
+    >
+      {/* Cloud wisps */}
+      <div className="cloud-wisp cloud-wisp-1" />
+      <div className="cloud-wisp cloud-wisp-2" />
+      <div className="cloud-wisp cloud-wisp-3" />
+      <div className="cloud-wisp cloud-wisp-4" />
+
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-2">
-        <div className="flex items-center gap-2 text-sm text-zinc-400">
+      <header className="glass-strong filigree-border relative z-10 flex items-center justify-between px-5 py-3">
+        <div className="flex items-center gap-3">
+          {/* Ornamental icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="h-4 w-4"
+            stroke="rgba(200,168,78,0.6)"
+            strokeWidth="1.5"
+            className="h-5 w-5"
           >
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2l-2-2H9L7 5H5a2 2 0 0 0-2 2Z" />
+            <path d="M12 12v5" strokeWidth="1" />
+            <path d="M9.5 14.5 12 12l2.5 2.5" strokeWidth="1" />
           </svg>
-          <span className="font-mono text-xs" title={workspacePath}>
+          <span
+            className="font-display text-xs tracking-wider text-ink-faint"
+            title={workspacePath}
+          >
             {displayPath}
           </span>
         </div>
-        <button
-          onClick={clearMessages}
-          className="text-xs text-zinc-500 transition-colors hover:text-zinc-300"
-        >
-          Clear chat
-        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={clearMessages}
+            className="rounded-full px-3 py-1.5 font-body text-xs italic text-ink-faint/60 transition-all duration-300 hover:text-gold hover:bg-white/30"
+          >
+            Clear
+          </button>
+        </div>
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6">
         {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-zinc-500">
-              Send a message to start chatting about your workspace.
+          <div className="flex h-full flex-col items-center justify-center gap-6">
+            {/* Decorative ornament */}
+            <div className="flex items-center gap-4">
+              <div className="h-px w-12 bg-linear-to-r from-transparent to-gold/20" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 32 32"
+                fill="none"
+                className="h-8 w-8"
+              >
+                <circle
+                  cx="16"
+                  cy="16"
+                  r="15"
+                  stroke="rgba(200,168,78,0.15)"
+                  strokeWidth="1"
+                />
+                <circle
+                  cx="16"
+                  cy="16"
+                  r="8"
+                  stroke="rgba(200,168,78,0.2)"
+                  strokeWidth="0.5"
+                />
+                <circle cx="16" cy="16" r="2" fill="rgba(200,168,78,0.25)" />
+                <line
+                  x1="16"
+                  y1="1"
+                  x2="16"
+                  y2="5"
+                  stroke="rgba(200,168,78,0.2)"
+                  strokeWidth="0.5"
+                />
+                <line
+                  x1="16"
+                  y1="27"
+                  x2="16"
+                  y2="31"
+                  stroke="rgba(200,168,78,0.2)"
+                  strokeWidth="0.5"
+                />
+                <line
+                  x1="1"
+                  y1="16"
+                  x2="5"
+                  y2="16"
+                  stroke="rgba(200,168,78,0.2)"
+                  strokeWidth="0.5"
+                />
+                <line
+                  x1="27"
+                  y1="16"
+                  x2="31"
+                  y2="16"
+                  stroke="rgba(200,168,78,0.2)"
+                  strokeWidth="0.5"
+                />
+              </svg>
+              <div className="h-px w-12 bg-linear-to-l from-transparent to-gold/20" />
+            </div>
+            <p className="font-display text-base italic tracking-wide text-ink-faint/50">
+              Begin a conversation with your workspace
             </p>
           </div>
         ) : (
-          <div className="mx-auto max-w-3xl space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+          <div className="mx-auto max-w-3xl space-y-5">
+            {messages.map((msg, idx) => {
+              const isUser = msg.role === "user";
+              const isFirst = idx === 0;
+              return (
                 <div
-                  className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${
-                    msg.role === "user"
-                      ? "bg-violet-600 text-white"
-                      : "bg-zinc-800 text-zinc-200"
-                  }`}
+                  key={msg.id}
+                  className={`flex ${isUser ? "justify-end" : "justify-start"}`}
                 >
-                  {/* Thinking */}
-                  {msg.thinking && (
-                    <details className="mb-2">
-                      <summary className="cursor-pointer text-xs text-zinc-400">
-                        Thinking...
-                      </summary>
-                      <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-500">
-                        {msg.thinking}
-                      </p>
-                    </details>
-                  )}
-
-                  {/* Content parts (user messages with images/audio) */}
-                  {msg.parts &&
-                    msg.parts.map((part, i) => {
-                      if (part.type === "image_url") {
-                        return (
-                          <img
-                            key={i}
-                            src={part.image_url.url}
-                            alt="attachment"
-                            className="mb-2 max-h-48 rounded-lg object-contain"
-                          />
-                        );
+                  <div
+                    className={`
+                      relative max-w-[78%] px-5 py-3 text-base leading-relaxed
+                      ${
+                        isUser
+                          ? "rounded-2xl rounded-br-md bg-[#f0e8cc]/60 text-ink shadow-sm border border-gold/15"
+                          : `glass rounded-2xl rounded-bl-md ${isFirst ? "drop-cap" : ""}`
                       }
-                      if (part.type === "input_audio") {
-                        return (
-                          <audio
-                            key={i}
-                            controls
-                            className="mb-2 w-full"
-                            src={`data:audio/webm;base64,${part.input_audio.data}`}
-                          />
-                        );
-                      }
-                      return null;
-                    })}
-
-                  {/* Text content */}
-                  {msg.content && (
-                    <p className="whitespace-pre-wrap break-words">
-                      {msg.content}
-                      {msg.isStreaming && (
-                        <span className="ml-0.5 inline-block h-4 w-1 animate-pulse bg-zinc-400" />
-                      )}
-                    </p>
-                  )}
-
-                  {/* Tool calls */}
-                  {msg.toolCalls && msg.toolCalls.length > 0 && (
-                    <div className="mt-2 space-y-1 border-t border-zinc-700 pt-2">
-                      {msg.toolCalls.map((tc) => (
-                        <div
-                          key={tc.id}
-                          className="rounded bg-zinc-900 px-2 py-1 text-xs"
+                    `}
+                  >
+                    {/* Assistant message ornament */}
+                    {!isUser && (
+                      <div className="absolute -left-3 -top-3 h-6 w-6">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className="h-full w-full"
                         >
-                          <span className="font-mono text-violet-400">
-                            {tc.name}
-                          </span>
-                          <span className="text-zinc-500">
-                            {" "}
-                            ({JSON.stringify(tc.input)})
-                          </span>
-                          {tc.status === "running" && (
-                            <span className="ml-2 animate-pulse text-zinc-500">
-                              running...
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="rgba(200,168,78,0.2)"
+                            strokeWidth="0.5"
+                          />
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="3"
+                            fill="rgba(200,168,78,0.15)"
+                          />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Thinking */}
+                    {msg.thinking && (
+                      <details
+                        open={msg.thinking.length > 0 && !msg.content}
+                        className="mb-2"
+                      >
+                        <summary className="cursor-pointer font-body text-xs italic tracking-wide text-ink-faint/50 transition-colors hover:text-gold/70">
+                          Reflection...
+                        </summary>
+                        <p className="mt-1 whitespace-pre-wrap font-body text-sm italic leading-relaxed text-ink-faint/60">
+                          {msg.thinking}
+                        </p>
+                      </details>
+                    )}
+
+                    {/* Content parts (user messages with images/audio) */}
+                    {msg.parts &&
+                      msg.parts.map((part, i) => {
+                        if (part.type === "image_url") {
+                          return (
+                            <img
+                              key={i}
+                              src={part.image_url.url}
+                              alt="attachment"
+                              className="mb-2 max-h-48 rounded-xl object-contain"
+                            />
+                          );
+                        }
+                        if (part.type === "input_audio") {
+                          return (
+                            <audio
+                              key={i}
+                              controls
+                              className="mb-2 w-full"
+                              src={`data:audio/webm;base64,${part.input_audio.data}`}
+                            />
+                          );
+                        }
+                        return null;
+                      })}
+
+                    {/* Text content */}
+                    {msg.content && (
+                      <p className="whitespace-pre-wrap wrap-break-word font-body text-[15px] leading-relaxed">
+                        {msg.content}
+                        {msg.isStreaming && (
+                          <span className="ml-0.5 inline-block h-4 w-1 animate-pulse rounded-full bg-gold/50" />
+                        )}
+                      </p>
+                    )}
+
+                    {/* Tool calls */}
+                    {msg.toolCalls && msg.toolCalls.length > 0 && (
+                      <div className="mt-3 space-y-1.5 border-t border-gold/10 pt-3">
+                        {msg.toolCalls.map((tc) => (
+                          <div
+                            key={tc.id}
+                            className="rounded-xl bg-white/30 px-3 py-1.5 font-body text-xs backdrop-blur-sm"
+                          >
+                            <span className="font-semibold tracking-wide text-gold">
+                              {tc.name}
                             </span>
-                          )}
-                          {tc.status === "done" && (
-                            <span className="ml-2 text-green-500">done</span>
-                          )}
-                          {tc.status === "error" && (
-                            <span className="ml-2 text-red-400">error</span>
-                          )}
-                          {tc.output && (
-                            <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap text-zinc-500 text-[10px]">
-                              {tc.output.length > 300
-                                ? tc.output.slice(0, 300) + "..."
-                                : tc.output}
-                            </pre>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                            <span className="text-ink-faint/70">
+                              {" "}
+                              ({JSON.stringify(tc.input)})
+                            </span>
+                            {tc.status === "running" && (
+                              <span className="ml-2 inline-flex items-center gap-1 text-ink-faint/50">
+                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold/40" />
+                                working...
+                              </span>
+                            )}
+                            {tc.status === "done" && (
+                              <span className="ml-2 text-emerald-600/60">
+                                complete
+                              </span>
+                            )}
+                            {tc.status === "error" && (
+                              <span className="ml-2 text-rose-400">error</span>
+                            )}
+                            {tc.output && (
+                              <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap font-body text-[10px] leading-relaxed text-ink-faint/50">
+                                {tc.output.length > 300
+                                  ? tc.output.slice(0, 300) + "..."
+                                  : tc.output}
+                              </pre>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div ref={bottomRef} />
           </div>
         )}
@@ -176,7 +292,7 @@ export function ChatScreen({ workspacePath }: Props) {
 
       {/* Error toast */}
       {error && (
-        <div className="mx-4 mb-1 rounded-lg border border-red-800 bg-red-950 px-3 py-2 text-xs text-red-400">
+        <div className="relative z-10 mx-4 mb-1 rounded-2xl border border-rose/30 bg-white/50 px-4 py-2.5 font-body text-sm text-rose-deep backdrop-blur-md">
           {error}
         </div>
       )}
