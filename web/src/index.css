@@ -372,3 +372,66 @@ body::before {
   background: rgba(200, 168, 78, 0.25);
   color: var(--color-ink);
 }
+
+/* ------------------------------------------------------------------ */
+/* Empty State — Editorial Tagline                                     */
+/* ------------------------------------------------------------------ */
+
+.empty-editorial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-editorial .editorial-main {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-style: italic;
+  font-size: 1.5rem;
+  color: var(--color-ink);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+
+.empty-editorial .editorial-rule {
+  width: 40px;
+  height: 1px;
+  background: oklch(0.75 0.08 84 / 0.4);
+}
+
+.empty-editorial .editorial-sub {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: oklch(0.55 0.012 84 / 0.5);
+  letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Header — Mono Path Display                                          */
+/* ------------------------------------------------------------------ */
+
+.header-path-mono {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.header-path-mono .header-path-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: oklch(0.7 0.08 84 / 0.5);
+}
+
+.header-path-mono .header-path-text {
+  font-family: "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: oklch(0.55 0.008 60 / 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

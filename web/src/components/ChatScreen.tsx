@@ -55,24 +55,13 @@ export function ChatScreen({ workspacePath }: Props) {
 
       {/* Header */}
       <header className="glass-strong filigree-border relative z-10 flex items-center justify-between px-5 py-3">
-        <div className="flex items-center gap-3">
-          {/* Ornamental icon */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgba(200,168,78,0.6)"
-            strokeWidth="1.5"
-            className="h-5 w-5"
-          >
+        <div className="header-path-mono">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="header-path-icon">
             <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2l-2-2H9L7 5H5a2 2 0 0 0-2 2Z" />
             <path d="M12 12v5" strokeWidth="1" />
             <path d="M9.5 14.5 12 12l2.5 2.5" strokeWidth="1" />
           </svg>
-          <span
-            className="font-display text-xs tracking-wider text-ink-faint"
-            title={workspacePath}
-          >
+          <span className="header-path-text" title={workspacePath}>
             {displayPath}
           </span>
         </div>
@@ -150,9 +139,12 @@ export function ChatScreen({ workspacePath }: Props) {
               </svg>
               <div className="h-px w-12 bg-linear-to-l from-transparent to-gold/20" />
             </div>
-            <p className="font-display text-base italic tracking-wide text-ink-faint/50">
-              Begin a conversation with your workspace
-            </p>
+            <div className="empty-editorial">
+              <p className="editorial-main">Begin a conversation</p>
+              <div className="editorial-rule" />
+              <p className="editorial-sub">with your workspace</p>
+            </div>
+
           </div>
         ) : (
           <div className="mx-auto max-w-3xl space-y-5">
