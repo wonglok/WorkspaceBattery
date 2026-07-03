@@ -96,7 +96,23 @@ enum Catalog {
       families
       .filter { $0.featured == true }
       .flatMap { picks(for: $0, budgetMb: budgetMb) }
+      + localSuggestions
   }
+
+  // MARK: - Local fallback suggestions
+
+  /// A handful of hardcoded recommendations that are always available alongside
+  /// the remote catalog. These cover new or notable releases that may not yet
+  /// be published in the remote catalog, or that should always be discoverable
+  /// regardless of the remote catalog's state.
+  private static let localSuggestions: [Suggestion] = [
+    Suggestion(
+      brand: "Gemma",
+      sizeName: "Gemma 4 E2B QAT",
+      repo: "google/gemma-4-E2B-it-qat-q4_0-gguf",
+      quant: "Q4_0",
+      sizeLabel: nil)
+  ]
 
   // MARK: - Selection
 
