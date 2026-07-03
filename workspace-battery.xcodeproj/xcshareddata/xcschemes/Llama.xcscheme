@@ -56,6 +56,11 @@
             value = "256"
             isEnabled = "NO">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "LLAMA_WEB_DIR"
+            value = "${PROJECT_DIR}/web"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction

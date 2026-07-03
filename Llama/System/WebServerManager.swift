@@ -80,6 +80,14 @@ class WebServerManager {
     // depending on whether we're running from the app bundle or from source.
 
     let candidates: [URL?] = [
+      // 0. LLAMA_WEB_DIR env var override (dev: set in Xcode scheme Arguments)
+      ({ () -> URL? in
+        if let val = ProcessInfo.processInfo.environment["LLAMA_WEB_DIR"] {
+          let url = URL(fileURLWithPath: val)
+          if FileManager.default.fileExists(atPath: url.appendingPathComponent("./backend/server.ts").path) { return url }
+        }
+        return nil
+      })(),
       // 1. Bundled in app Resources/ (production)
       Bundle.main.resourceURL?.appendingPathComponent("web"),
       // 2. Inside Llama.app bundle at Contents/web/ (alternative layout)
@@ -87,10 +95,19 @@ class WebServerManager {
         .deletingLastPathComponent()  // /Contents
         .deletingLastPathComponent()  // /Llama.app
         .appendingPathComponent("web"),
-      // 3. Next to the source tree (development: Llama-macOS/web/)
+      // 3. Next to the source tree (development)
       URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         .appendingPathComponent("web"),
-      // 4. Walk up from the executable path
+      // 4. Xcode env vars SRCROOT/PROJECT_DIR (set during debug)
+      ({ () -> URL? in
+        for key in ["SRCROOT", "PROJECT_DIR"] {
+          if let val = ProcessInfo.processInfo.environment[key] {
+            let url = URL(fileURLWithPath: val).appendingPathComponent("web")
+            if FileManager.default.fileExists(atPath: url.appendingPathComponent("./backend/server.ts").path) { return url }
+          }
+        }
+        return nil
+      })(),
     ]
 
     var found: URL?
@@ -103,16 +120,28 @@ class WebServerManager {
       }
     }
 
-    // Last resort: walk up from the executable directory
+    // Last resort: walk up from the executable or bundle Products/ directory
     if found == nil {
-      var candidate = Bundle.main.executableURL?.deletingLastPathComponent()
-      while let dir = candidate, dir.path != "/" {
-        let testDir = dir.appendingPathComponent("web")
-        if FileManager.default.fileExists(atPath: testDir.appendingPathComponent("./backend/server.ts").path) {
-          found = testDir
-          break
+      // Start from the exe directory and the bundle's Products/ ancestors.
+      // During Xcode development the exe lives deep in DerivedData; walking up
+      // from both paths covers more layouts.
+      let exeDir = Bundle.main.executableURL?.deletingLastPathComponent()
+      let productsDir = Bundle.main.bundleURL
+        .deletingLastPathComponent()  // /Contents
+        .deletingLastPathComponent()  // /Llama.app
+        .deletingLastPathComponent()  // /Debug/
+        .deletingLastPathComponent()  // /Products/
+      for startDir in [exeDir, productsDir].compactMap({ $0 }) {
+        var candidate: URL? = startDir
+        while let dir = candidate, dir.path != "/" {
+          let testDir = dir.appendingPathComponent("web")
+          if FileManager.default.fileExists(atPath: testDir.appendingPathComponent("./backend/server.ts").path) {
+            found = testDir
+            break
+          }
+          candidate = dir.deletingLastPathComponent()
         }
-        candidate = dir.deletingLastPathComponent()
+        if found != nil { break }
       }
     }
 
