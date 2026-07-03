@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useChat } from "../hooks/useChat";
 import { ChatInput } from "./ChatInput";
 
@@ -234,12 +236,19 @@ export function ChatScreen({ workspacePath }: Props) {
                       })}
 
                     {/* Text content */}
-                    {msg.content && (
-                      <p className="whitespace-pre-wrap wrap-break-word font-body text-[15px] leading-relaxed">
-                        {msg.content}
+                    {msg.content && !isUser && (
+                      <div className="prose max-w-none font-body text-base leading-relaxed text-ink prose-headings:font-display prose-headings:text-ink prose-headings:font-medium prose-a:text-gold prose-a:no-underline hover:prose-a:underline prose-code:font-mono prose-code:text-xs prose-code:bg-white/40 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-ink-soft prose-pre:bg-white/30 prose-pre:backdrop-blur-sm prose-pre:rounded-xl prose-pre:text-sm prose-strong:text-ink prose-em:italic prose-em:text-ink-soft prose-li:marker:text-gold/40">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
                         {msg.isStreaming && (
                           <span className="ml-0.5 inline-block h-4 w-1 animate-pulse rounded-full bg-gold/50" />
                         )}
+                      </div>
+                    )}
+                    {msg.content && isUser && (
+                      <p className="whitespace-pre-wrap wrap-break-word font-body text-[15px] leading-relaxed">
+                        {msg.content}
                       </p>
                     )}
 

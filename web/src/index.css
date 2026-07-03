@@ -6,8 +6,8 @@
 
 @theme {
   --font-display: "Playfair Display", Georgia, serif;
-  --font-body: "Cormorant Garamond", "Times New Roman", serif;
-  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Lora", Georgia, serif;
+  --font-serif: "Lora", Georgia, serif;
 
   --color-pearl: #faf7f2;
   --color-pearl-dim: #f0ebe0;
