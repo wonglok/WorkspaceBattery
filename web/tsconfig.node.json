@@ -13,6 +13,6 @@
     "declaration": false,
     "sourceMap": true
   },
-  "include": ["*.ts", "backend/server.ts"],
+  "include": ["*.ts", "backend/**/*.ts", "src/api.ts", "src/types.ts"],
   "exclude": ["node_modules", "dist"]
 }
