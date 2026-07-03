@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		93B9DD292FF78B56006FBFA2 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = 154EE9812EA64E210083FDEF /* SwiftWhisper */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,7 +39,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				93B9DD292FF78B56006FBFA2 /* SwiftWhisper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,7 +82,6 @@
 			);
 			name = WorkspaceBattery;
 			packageProductDependencies = (
-				154EE9812EA64E210083FDEF /* SwiftWhisper */,
 			);
 			productName = Llama;
 			productReference = 1568919C2E2685F700F71BD4 /* WorkspaceBattery.app */;
@@ -115,7 +112,6 @@
 			mainGroup = 156891932E2685F700F71BD4;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				154EE9822EA64E210083FDF0 /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1568919D2E2685F700F71BD4 /* Products */;
@@ -387,24 +383,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		154EE9822EA64E210083FDF0 /* XCRemoteSwiftPackageReference "SwiftWhisper" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/exPHAT/SwiftWhisper.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		154EE9812EA64E210083FDEF /* SwiftWhisper */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 154EE9822EA64E210083FDF0 /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
-			productName = SwiftWhisper;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 156891942E2685F700F71BD4 /* Project object */;
 }

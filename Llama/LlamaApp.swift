@@ -121,10 +121,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     WebServerManager.shared.start()
     logger.info("Web URL: \(WebServerManager.webUrl)")
 
-    // Start the Whisper REST endpoint for speech-to-text (best-effort).
-    // Downloads the whisper model on first launch, then serves on port 8444.
-    WhisperServer.shared.start()
-    logger.info("Whisper REST endpoint: \(WhisperServer.baseURL)")
 
     logger.info("Llama startup complete")
   }
@@ -155,8 +151,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Gracefully stop the Node.js web server process when app quits
     WebServerManager.shared.stop()
 
-    // Gracefully stop the Whisper REST endpoint
-    WhisperServer.shared.stop()
 
     // Gracefully stop the llama-server process when app quits
     LlamaServer.shared.stop()
