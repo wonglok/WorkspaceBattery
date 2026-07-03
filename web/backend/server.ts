@@ -277,9 +277,10 @@ function sseWrite(res: Response, event: string, data: Record<string, unknown>) {
 }
 
 app.post("/api/chat", async (req: Request, res: Response) => {
-  const { messages, model, workspace: userInputworkspace } = req.body;
+  const { messages, model } = req.body;
+  // workspace: userInputworkspace
 
-  const workspace = userInputworkspace || DEFAULT_WORKSPACE;
+  const workspace = DEFAULT_WORKSPACE;
 
   if (!messages || !model || !workspace) {
     res

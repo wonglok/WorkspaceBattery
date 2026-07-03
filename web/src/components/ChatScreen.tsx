@@ -247,7 +247,7 @@ export function ChatScreen({ workspacePath }: Props) {
                       </div>
                     )}
                     {msg.content && isUser && (
-                      <p className="whitespace-pre-wrap wrap-break-word font-body text-[15px] leading-relaxed">
+                      <p className="whitespace-pre-wrap wrap-break-word font-body text-base leading-relaxed">
                         {msg.content}
                       </p>
                     )}
