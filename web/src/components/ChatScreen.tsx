@@ -20,6 +20,7 @@ export function ChatScreen({ workspacePath }: Props) {
     stopGeneration,
     clearMessages,
     conversationId,
+    setHovering,
   } = useChat(workspacePath);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -318,6 +319,7 @@ export function ChatScreen({ workspacePath }: Props) {
 
       {/* Input */}
       <ChatInput
+        setHovering={setHovering}
         onSend={sendMessage}
         isStreaming={isStreaming}
         onStop={stopGeneration}

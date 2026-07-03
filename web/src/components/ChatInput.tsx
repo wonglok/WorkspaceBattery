@@ -11,6 +11,7 @@ interface Props {
   selectedModel: string;
   onModelChange: (model: string) => void;
   conversationId: string;
+  setHovering: any;
 }
 
 export function ChatInput({
@@ -21,6 +22,7 @@ export function ChatInput({
   selectedModel,
   onModelChange,
   conversationId,
+  setHovering,
 }: Props) {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -369,6 +371,9 @@ export function ChatInput({
           Model
         </label>
         <select
+          onMouseEnter={() => {
+            setHovering((r: boolean) => !!!r);
+          }}
           value={selectedModel}
           onChange={(e) => onModelChange(e.target.value)}
           disabled={isStreaming || models.length === 0}

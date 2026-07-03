@@ -14,6 +14,7 @@ export function useChat(workspacePath: string) {
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
+  const [hovering, setHovering] = useState("");
   useEffect(() => {
     fetch(`${BASE_URL}/v1/models`)
       .then((r) => r.json())
@@ -21,13 +22,14 @@ export function useChat(workspacePath: string) {
         const ids: string[] = (data?.data ?? [])
           .map((m: { id: string }) => m.id)
           .filter(Boolean);
+
         setModels(ids);
         if (ids.length > 0 && !selectedModel) setSelectedModel(ids[0]);
       })
       .catch(() => {
         // LLM server not available
       });
-  }, [selectedModel]);
+  }, [selectedModel, hovering]);
 
   const sendMessage = useCallback(
     async (parts: ContentPart[]) => {
@@ -205,6 +207,7 @@ export function useChat(workspacePath: string) {
   }, []);
 
   return {
+    setHovering,
     messages,
     isStreaming,
     error,
