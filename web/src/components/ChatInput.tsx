@@ -24,6 +24,7 @@ export function ChatInput({
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [audioName, setAudioName] = useState<string | null>(null);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
+  const [audioFormat, setAudioFormat] = useState<string>("webm");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +58,8 @@ export function ChatInput({
       const base64 = dataUri.split(",")[1] ?? "";
       setAudioName(file.name);
       setAudioBase64(base64);
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "webm";
+      setAudioFormat(ext);
     };
     reader.readAsDataURL(file);
   };
@@ -66,8 +69,9 @@ export function ChatInput({
       const blob = await voice.stopRecording();
       const dataUri = await voice.getBase64Audio(blob);
       const base64 = dataUri.split(",")[1] ?? "";
-      setAudioName("recording.webm");
+      setAudioName("recording.mp3");
       setAudioBase64(base64);
+      setAudioFormat("mp3");
     } else {
       await voice.startRecording();
     }
@@ -90,7 +94,7 @@ export function ChatInput({
     if (audioBase64) {
       parts.push({
         type: "input_audio",
-        input_audio: { data: audioBase64, format: "webm" },
+        input_audio: { data: audioBase64, format: audioFormat as any },
       });
     }
 
@@ -100,6 +104,7 @@ export function ChatInput({
     setImageBase64(null);
     setAudioName(null);
     setAudioBase64(null);
+    setAudioFormat("webm");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -121,6 +126,7 @@ export function ChatInput({
   const clearAudio = () => {
     setAudioName(null);
     setAudioBase64(null);
+    setAudioFormat("webm");
     if (audioInputRef.current) audioInputRef.current.value = "";
   };
 

@@ -277,7 +277,9 @@ function sseWrite(res: Response, event: string, data: Record<string, unknown>) {
 }
 
 app.post("/api/chat", async (req: Request, res: Response) => {
-  const { messages, model, workspace } = req.body;
+  const { messages, model, workspace: userInputworkspace } = req.body;
+
+  const workspace = userInputworkspace || DEFAULT_WORKSPACE;
 
   if (!messages || !model || !workspace) {
     res
@@ -319,6 +321,7 @@ Always explain what you're doing before using a tool. Be concise.`;
   ];
 
   try {
+    let naturalStop = false;
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const stream = await client.chat.completions.create({
         model,
@@ -345,7 +348,7 @@ Always explain what you're doing before using a tool. Be concise.`;
 
         if (delta?.content) {
           content += delta.content;
-          sseWrite(res, "content", { delta: content });
+          sseWrite(res, "content", { delta: delta.content });
         }
 
         if (delta?.tool_calls) {
@@ -397,6 +400,7 @@ Always explain what you're doing before using a tool. Be concise.`;
       // If no tool calls, we're done
       if (toolCalls.length === 0) {
         sseWrite(res, "done", {});
+        naturalStop = true;
         break;
       }
 
@@ -436,8 +440,8 @@ Always explain what you're doing before using a tool. Be concise.`;
       }
     }
 
-    // If we hit max iterations
-    if (conversation.length > 0) {
+    // If we hit max iterations without a natural stop
+    if (!naturalStop) {
       sseWrite(res, "done", {});
     }
   } catch (err) {
