@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { startChatStream } from "../api";
 import type { ContentPart, DisplayMessage, SSEEvent } from "../types";
+import { BASE_URL } from "../api";
 
 export function useChat(workspacePath: string) {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -13,7 +14,7 @@ export function useChat(workspacePath: string) {
   messagesRef.current = messages;
 
   useEffect(() => {
-    fetch(`${window.location.origin}/v1/models`)
+    fetch(`${BASE_URL}/v1/models`)
       .then((r) => r.json())
       .then((data) => {
         const ids: string[] = (data?.data ?? [])

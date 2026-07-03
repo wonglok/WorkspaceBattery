@@ -1,6 +1,8 @@
 import type { ChatRequest, SSEEvent, WorkspaceConfig } from "./types";
 
-const BASE = "http://localhost:8333";
+export const BASE_URL = "http://localhost:8333";
+
+const BASE = BASE_URL;
 
 export async function pickFolder(): Promise<string | null> {
   const res = await fetch(`${BASE}/api/folder-picker`, { method: "POST" });
