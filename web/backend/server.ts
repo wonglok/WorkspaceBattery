@@ -229,25 +229,6 @@ const TOOLS = [
       },
     },
   },
-  {
-    type: "function" as const,
-    function: {
-      name: "getConversationImage",
-      description:
-        "get the image in the convesation by message index start from index 0.",
-      parameters: {
-        type: "object",
-        properties: {
-          index: {
-            type: "string",
-            description:
-              "get the image in the convesation by message index start from index 0, default 0",
-          },
-        },
-        required: [],
-      },
-    },
-  },
 
   //
 ];
@@ -265,12 +246,11 @@ function safeResolve(workspaceRoot: string, relativePath: string): string {
   return resolved;
 }
 
-function executeTool(
+async function executeTool(
   name: string,
   input: Record<string, unknown>,
   workspaceRoot: string,
-  registry?: Map,
-): string {
+): Promise<string> {
   switch (name) {
     case "readFile": {
       const filePath = safeResolve(workspaceRoot, input.path as string);
@@ -290,13 +270,7 @@ function executeTool(
         .map((e) => `${e.isDirectory() ? "📁" : "📄"} ${e.name}`)
         .join("\n");
     }
-    case "listDir": {
-      const dirPath = safeResolve(workspaceRoot, (input.path as string) || "");
-      const entries = readdirSync(dirPath, { withFileTypes: true });
-      return entries
-        .map((e) => `${e.isDirectory() ? "📁" : "📄"} ${e.name}`)
-        .join("\n");
-    }
+
     default:
       return `Unknown tool: ${name}`;
   }
@@ -347,8 +321,6 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 
   const client = new OpenAI({ baseURL: `${LLAMA_HOST}/v1`, apiKey: "none" });
 
-  const registry = new Map();
-
   const systemPrompt = [
     `You are a workspace AI assistant with access to the workspace at: ${workspaceRoot}`,
     `Today is: ${new Date().toISOString()}`,
@@ -357,7 +329,6 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     `- readFile(path): Read file contents (relative to workspace root)`,
     `- writeFile(path, content): Write content to a file. Creates parent directories automatically.`,
     `- listDir(path): List files and directories (relative to workspace root, default: root)`,
-    `- getConversationImage(idx): get the image in the convesation by message index start from index 0`,
     ``,
     `Always explain what you're doing before using a tool. Be concise.`,
     workspaceMemory ? `\n## My System Memory:\n\n${workspaceMemory}` : "",
@@ -377,23 +348,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     })),
   ];
 
-  let images = [];
-  let idx = 0;
-  for (let message of conversation) {
-    if (message.content instanceof Array) {
-      for (let eachItem of message.content) {
-        if (eachItem.type === "image_url") {
-          if (eachItem.image_url) {
-            images.push({
-              index: idx,
-              image_url: eachItem,
-            });
-          }
-        }
-      }
-    }
-    idx++;
-  }
+  //
 
   try {
     let naturalStop = false;
@@ -497,7 +452,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 
         let output: string;
         try {
-          output = executeTool(tc.name, input, workspaceRoot, registry);
+          output = await executeTool(tc.name, input, workspaceRoot);
         } catch (err) {
           output = `Error: ${err instanceof Error ? err.message : String(err)}`;
         }
