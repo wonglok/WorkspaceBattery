@@ -69,9 +69,9 @@ export function ChatInput({
       const blob = await voice.stopRecording();
       const dataUri = await voice.getBase64Audio(blob);
       const base64 = dataUri.split(",")[1] ?? "";
-      setAudioName("recording.mp3");
+      setAudioName("recording.wav");
       setAudioBase64(base64);
-      setAudioFormat("mp3");
+      setAudioFormat("wav");
     } else {
       await voice.startRecording();
     }

@@ -16,7 +16,6 @@
     "concurrently": "^10.0.3",
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
-    "lamejs": "^1.2.1",
     "nativefiledialog-for-bun": "^0.3.2",
     "openai": "^6.45.0",
     "react": "^19.2.7",

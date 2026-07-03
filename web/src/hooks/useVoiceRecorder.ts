@@ -1,46 +1,62 @@
 import { useState, useRef, useCallback } from "react";
-import lamejs from "lamejs";
 
-function audioBufferToMp3(buffer: AudioBuffer): Blob {
+function audioBufferToWav(buffer: AudioBuffer): ArrayBuffer {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
-  const encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+  const bitsPerSample = 16;
+  const bytesPerSample = bitsPerSample / 8;
+  const dataLength = buffer.length * numChannels * bytesPerSample;
+  const headerSize = 44;
+  const totalSize = headerSize + dataLength;
 
-  const left = buffer.getChannelData(0);
-  const right = numChannels > 1 ? buffer.getChannelData(1) : left;
+  const wav = new ArrayBuffer(totalSize);
+  const view = new DataView(wav);
 
-  // Convert Float32 [-1,1] to Int16
-  const leftInt = new Int16Array(left.length);
-  const rightInt = new Int16Array(right.length);
-  for (let i = 0; i < left.length; i++) {
-    const s = Math.max(-1, Math.min(1, left[i]));
-    leftInt[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  for (let i = 0; i < right.length; i++) {
-    const s = Math.max(-1, Math.min(1, right[i]));
-    rightInt[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  function writeString(offset: number, str: string) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
   }
 
-  const mp3Data: Int8Array[] = [];
-  const blockSize = 1152;
-  for (let i = 0; i < leftInt.length; i += blockSize) {
-    const leftChunk = leftInt.subarray(i, i + blockSize);
-    const rightChunk = rightInt.subarray(i, i + blockSize);
-    const encoded = encoder.encodeBuffer(leftChunk, rightChunk);
-    if (encoded.length > 0) mp3Data.push(encoded);
-  }
-  const final = encoder.flush();
-  if (final.length > 0) mp3Data.push(final);
+  writeString(0, "RIFF");
+  view.setUint32(4, totalSize - 8, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+  view.setUint16(32, numChannels * bytesPerSample, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, "data");
+  view.setUint32(40, dataLength, true);
 
-  return new Blob(mp3Data as any, { type: "audio/mp3" });
+  const channels: Float32Array[] = [];
+  for (let c = 0; c < numChannels; c++) {
+    channels.push(buffer.getChannelData(c));
+  }
+
+  let offset = 44;
+  for (let i = 0; i < buffer.length; i++) {
+    for (let c = 0; c < numChannels; c++) {
+      const sample = Math.max(-1, Math.min(1, channels[c][i]));
+      const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+      view.setInt16(offset, intSample, true);
+      offset += 2;
+    }
+  }
+
+  return wav;
 }
 
-async function blobToMp3(blob: Blob): Promise<Blob> {
+async function blobToWav(blob: Blob): Promise<Blob> {
   const audioCtx = new AudioContext();
   try {
     const arrayBuffer = await blob.arrayBuffer();
     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    return audioBufferToMp3(audioBuffer);
+    const wavBuffer = audioBufferToWav(audioBuffer);
+    return new Blob([wavBuffer], { type: "audio/wav" });
   } finally {
     audioCtx.close();
   }
@@ -90,17 +106,15 @@ export function useVoiceRecorder() {
       if (!recorder) return;
 
       recorder.onstop = async () => {
-        const webmBlob = new Blob(chunksRef.current, {
-          type: recorder.mimeType,
-        });
+        const webmBlob = new Blob(chunksRef.current, { type: recorder.mimeType });
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         if (timerRef.current) clearInterval(timerRef.current);
         setIsRecording(false);
 
         try {
-          const mp3Blob = await blobToMp3(webmBlob);
-          resolve(mp3Blob);
+          const wavBlob = await blobToWav(webmBlob);
+          resolve(wavBlob);
         } catch {
           resolve(webmBlob);
         }
