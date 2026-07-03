@@ -337,6 +337,10 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 
   const workspaceRoot = workspace;
 
+  if (!existsSync(workspaceRoot)) {
+    mkdirSync(workspaceRoot, { recursive: true });
+  }
+
   console.log(workspaceRoot);
   if (!existsSync(workspaceRoot)) {
     res.status(400).json({ error: `Workspace not found: ${workspaceRoot}` });

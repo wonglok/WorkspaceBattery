@@ -244,6 +244,13 @@ final class MenuController: NSObject, NSMenuDelegate {
     let view = HeaderView(server: server)
     menu.addItem(NSMenuItem.viewItem(with: view))
     menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
+    // Quick download row — paste a HF model ID (org/repo or org/repo:QUANT) and
+    // tap the download arrow (or press Enter) to resolve and install it.
+    let downloadView = CustomDownloadView { [weak self] repo, quant in
+      DeeplinkHandler.shared.install(repo: repo, quant: quant, announce: false)
+    }
+    menu.addItem(NSMenuItem.viewItem(with: downloadView))
+    menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
 
     // Surface the app-owned CLI install (setting up… / failed + retry) above
     // everything else; without the engine, nothing below it can run.
