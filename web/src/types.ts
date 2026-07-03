@@ -46,6 +46,7 @@ export interface ChatRequest {
   messages: ChatMessage[];
   model: string;
   workspace: string;
+  conversationId?: string;
 }
 
 export interface ToolDefinition {

@@ -166,71 +166,143 @@ app.post("/api/folder-picker", async (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// API — file upload (saves attachments to workspace)
+// ---------------------------------------------------------------------------
+
+app.post("/api/upload", (req: Request, res: Response) => {
+  const { data, name, conversationId } = req.body;
+  if (!data || !name || !conversationId) {
+    res
+      .status(400)
+      .json({ error: "data, name, and conversationId are required" });
+    return;
+  }
+
+  const uploadDir = resolve(DEFAULT_WORKSPACE, "upload", conversationId);
+  if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true });
+
+  const filePath = resolve(uploadDir, name);
+  const buffer = Buffer.from(data, "base64");
+  writeFileSync(filePath, buffer);
+
+  res.json({
+    path: filePath,
+    relativePath: `upload/${conversationId}/${name}`,
+  });
+});
+
+// ---------------------------------------------------------------------------
 // API — chat with agentic loop (SSE)
 // ---------------------------------------------------------------------------
 
-const TOOLS = [
-  {
-    type: "function" as const,
-    function: {
-      name: "readFile",
-      description:
-        "Read the contents of a file in the workspace. Path is relative to workspace root.",
-      parameters: {
-        type: "object",
-        properties: {
-          path: {
-            type: "string",
-            description: "Relative path from workspace root",
-          },
-        },
-        required: ["path"],
-      },
-    },
-  },
-  {
-    type: "function" as const,
-    function: {
-      name: "writeFile",
-      description:
-        "Write content to a file in the workspace. Creates parent directories if needed.",
-      parameters: {
-        type: "object",
-        properties: {
-          path: {
-            type: "string",
-            description: "Relative path from workspace root",
-          },
-          content: {
-            type: "string",
-            description: "File content to write",
-          },
-        },
-        required: ["path", "content"],
-      },
-    },
-  },
-  {
-    type: "function" as const,
-    function: {
-      name: "listDir",
-      description:
-        "List files and directories in the workspace. Path is relative to workspace root.",
-      parameters: {
-        type: "object",
-        properties: {
-          path: {
-            type: "string",
-            description:
-              "Relative path from workspace root (default: workspace root)",
-          },
-        },
-        required: [],
-      },
-    },
-  },
+// ---------------------------------------------------------------------------
+// Tool system — unified definition + handler
+// ---------------------------------------------------------------------------
 
-  //
+type ToolJson = {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  };
+};
+
+interface ToolDef {
+  json: ToolJson;
+  fn: (input: Record<string, unknown>, workspaceRoot: string) => string;
+}
+
+function defineTool(
+  json: ToolJson,
+  fn: (input: Record<string, unknown>, workspaceRoot: string) => string,
+): ToolDef {
+  return { json, fn };
+}
+
+const TOOLS: ToolDef[] = [
+  defineTool(
+    {
+      type: "function",
+      function: {
+        name: "readFile",
+        description:
+          "Read the contents of a file in the workspace. Path is relative to workspace root.",
+        parameters: {
+          type: "object",
+          properties: {
+            path: {
+              type: "string",
+              description: "Relative path from workspace root",
+            },
+          },
+          required: ["path"],
+        },
+      },
+    },
+    (input, root) =>
+      readFileSync(safeResolve(root, input.path as string), "utf-8"),
+  ),
+  defineTool(
+    {
+      type: "function",
+      function: {
+        name: "writeFile",
+        description:
+          "Write content to a file in the workspace. Creates parent directories if needed.",
+        parameters: {
+          type: "object",
+          properties: {
+            path: {
+              type: "string",
+              description: "Relative path from workspace root",
+            },
+            content: { type: "string", description: "File content to write" },
+          },
+          required: ["path", "content"],
+        },
+      },
+    },
+    (input, root) => {
+      const filePath = safeResolve(root, input.path as string);
+      const dir = path.dirname(filePath);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(filePath, input.content as string, "utf-8");
+      return `File written: ${input.path}`;
+    },
+  ),
+  defineTool(
+    {
+      type: "function",
+      function: {
+        name: "listDir",
+        description:
+          "List files and directories in the workspace. Path is relative to workspace root.",
+        parameters: {
+          type: "object",
+          properties: {
+            path: {
+              type: "string",
+              description:
+                "Relative path from workspace root (default: workspace root)",
+            },
+          },
+          required: [],
+        },
+      },
+    },
+    (input, root) => {
+      const dirPath = safeResolve(root, (input.path as string) || "");
+      const entries = readdirSync(dirPath, { withFileTypes: true });
+      return entries
+        .map((e) => `${e.isDirectory() ? "📁" : "📄"} ${e.name}`)
+        .join("\n");
+    },
+  ),
 ];
 
 const MAX_ITERATIONS = 250;
@@ -246,42 +318,12 @@ function safeResolve(workspaceRoot: string, relativePath: string): string {
   return resolved;
 }
 
-async function executeTool(
-  name: string,
-  input: Record<string, unknown>,
-  workspaceRoot: string,
-): Promise<string> {
-  switch (name) {
-    case "readFile": {
-      const filePath = safeResolve(workspaceRoot, input.path as string);
-      return readFileSync(filePath, "utf-8");
-    }
-    case "writeFile": {
-      const filePath = safeResolve(workspaceRoot, input.path as string);
-      const dir = path.dirname(filePath);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(filePath, input.content as string, "utf-8");
-      return `File written: ${input.path}`;
-    }
-    case "listDir": {
-      const dirPath = safeResolve(workspaceRoot, (input.path as string) || "");
-      const entries = readdirSync(dirPath, { withFileTypes: true });
-      return entries
-        .map((e) => `${e.isDirectory() ? "📁" : "📄"} ${e.name}`)
-        .join("\n");
-    }
-
-    default:
-      return `Unknown tool: ${name}`;
-  }
-}
-
 function sseWrite(res: Response, event: string, data: Record<string, unknown>) {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
 app.post("/api/chat", async (req: Request, res: Response) => {
-  const { messages, model } = req.body;
+  const { messages, model, conversationId } = req.body;
   // workspace: userInputworkspace
 
   const workspace = DEFAULT_WORKSPACE;
@@ -324,6 +366,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
   const systemPrompt = [
     `You are a workspace AI assistant with access to the workspace at: ${workspaceRoot}`,
     `Today is: ${new Date().toISOString()}`,
+    `Conversation ID is: ${conversationId}`,
     ``,
     `You have the following tools:`,
     `- readFile(path): Read file contents (relative to workspace root)`,
@@ -331,10 +374,11 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     `- listDir(path): List files and directories (relative to workspace root, default: root)`,
     ``,
     `Always explain what you're doing before using a tool. Be concise.`,
+    conversationId ? `\nConversation ID: ${conversationId}` : "",
+    `User attachments for this conversation are saved in: upload/${conversationId}/`,
     workspaceMemory ? `\n## My System Memory:\n\n${workspaceMemory}` : "",
     `
-    Always listDir of the workspace and see all the files, check to see if you have any ./diary/*.md
-    You can read the suitable file to understand the mood of the user.
+    Always listDir of the workspace and see all the files and sub-folders and its files recursively.
     `,
   ]
     .join("\n")
@@ -356,7 +400,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
       const stream = await client.chat.completions.create({
         model,
         messages: conversation,
-        tools: TOOLS,
+        tools: TOOLS.map((t) => t.json),
         stream: true,
         reasoning_effort: "high",
       });
@@ -450,9 +494,12 @@ app.post("/api/chat", async (req: Request, res: Response) => {
           input,
         });
 
+        const tool = TOOLS.find((t) => t.json.function.name === tc.name);
         let output: string;
         try {
-          output = await executeTool(tc.name, input, workspaceRoot);
+          output = tool
+            ? tool.fn(input, workspaceRoot)
+            : `Unknown tool: ${tc.name}`;
         } catch (err) {
           output = `Error: ${err instanceof Error ? err.message : String(err)}`;
         }

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
+import { uploadFile } from "../api";
 import type { ContentPart } from "../types";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
   models: string[];
   selectedModel: string;
   onModelChange: (model: string) => void;
+  conversationId: string;
 }
 
 export function ChatInput({
@@ -18,6 +20,7 @@ export function ChatInput({
   models,
   selectedModel,
   onModelChange,
+  conversationId,
 }: Props) {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -77,13 +80,38 @@ export function ChatInput({
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const hasContent = text.trim() || imageBase64 || audioBase64;
     if (!hasContent || isStreaming) return;
 
+    const fileRefs: string[] = [];
+
+    // Upload image
+    if (imageBase64) {
+      const ext = imagePreview?.startsWith("data:image/")
+        ? imagePreview.split(";")[0].split("/")[1] ?? "png"
+        : "png";
+      const b64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+      try {
+        const relPath = await uploadFile(b64, `image.${ext}`, conversationId);
+        fileRefs.push(`[image: ${relPath}]`);
+      } catch { /* continue without saving */ }
+    }
+
+    // Upload audio
+    if (audioBase64 && audioName) {
+      try {
+        const relPath = await uploadFile(audioBase64, audioName, conversationId);
+        fileRefs.push(`[audio: ${relPath}]`);
+      } catch { /* continue without saving */ }
+    }
+
     const parts: ContentPart[] = [];
-    if (text.trim()) {
-      parts.push({ type: "text", text: text.trim() });
+
+    // Prepend file references to the text
+    const fullText = [text.trim(), ...fileRefs].filter(Boolean).join("\n\n");
+    if (fullText) {
+      parts.push({ type: "text", text: fullText });
     }
     if (imageBase64) {
       parts.push({

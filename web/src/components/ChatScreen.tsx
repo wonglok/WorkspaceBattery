@@ -19,6 +19,7 @@ export function ChatScreen({ workspacePath }: Props) {
     sendMessage,
     stopGeneration,
     clearMessages,
+    conversationId,
   } = useChat(workspacePath);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -316,6 +317,7 @@ export function ChatScreen({ workspacePath }: Props) {
         models={models}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
+        conversationId={conversationId}
       />
     </div>
   );

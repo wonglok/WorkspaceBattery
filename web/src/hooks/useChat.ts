@@ -9,6 +9,7 @@ export function useChat(workspacePath: string) {
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
+  const [conversationId, setConversationId] = useState(crypto.randomUUID());
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -69,6 +70,7 @@ export function useChat(workspacePath: string) {
             })),
             model: selectedModel,
             workspace: workspacePath,
+            conversationId,
           },
           (event: SSEEvent) => {
             switch (event.type) {
@@ -199,6 +201,7 @@ export function useChat(workspacePath: string) {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
+    setConversationId(crypto.randomUUID());
   }, []);
 
   return {
@@ -211,5 +214,6 @@ export function useChat(workspacePath: string) {
     sendMessage,
     stopGeneration,
     clearMessages,
+    conversationId,
   };
 }

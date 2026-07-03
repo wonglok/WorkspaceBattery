@@ -16,6 +16,21 @@ export async function getConfig(): Promise<WorkspaceConfig> {
   return res.json() as WorkspaceConfig;
 }
 
+export async function uploadFile(
+  data: string,
+  name: string,
+  conversationId: string,
+): Promise<string> {
+  const res = await fetch(`${BASE}/api/upload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data, name, conversationId }),
+  });
+  if (!res.ok) throw new Error("Upload failed");
+  const json = (await res.json()) as any;
+  return json.relativePath as string;
+}
+
 export async function saveConfig(config: WorkspaceConfig): Promise<void> {
   await fetch(`${BASE}/api/config`, {
     method: "POST",
