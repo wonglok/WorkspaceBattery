@@ -220,12 +220,14 @@ export function ChatScreen({ workspacePath }: Props) {
                         }
                         if (part.type === "input_audio") {
                           return (
-                            <audio
-                              key={i}
-                              controls
-                              className="mb-2 w-full"
-                              src={`data:audio/webm;base64,${part.input_audio.data}`}
-                            />
+                            <div className="w-[260px]">
+                              <audio
+                                key={i}
+                                controls
+                                className="mb-2 w-full"
+                                src={`data:audio/wav;base64,${part.input_audio.data}`}
+                              />
+                            </div>
                           );
                         }
                         return null;
