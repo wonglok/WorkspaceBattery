@@ -89,21 +89,31 @@ export function ChatInput({
     // Upload image
     if (imageBase64) {
       const ext = imagePreview?.startsWith("data:image/")
-        ? imagePreview.split(";")[0].split("/")[1] ?? "png"
+        ? (imagePreview.split(";")[0].split("/")[1] ?? "png")
         : "png";
-      const b64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+      const b64 = imageBase64.includes(",")
+        ? imageBase64.split(",")[1]
+        : imageBase64;
       try {
         const relPath = await uploadFile(b64, `image.${ext}`, conversationId);
         fileRefs.push(`[image: ${relPath}]`);
-      } catch { /* continue without saving */ }
+      } catch {
+        /* continue without saving */
+      }
     }
 
     // Upload audio
     if (audioBase64 && audioName) {
       try {
-        const relPath = await uploadFile(audioBase64, audioName, conversationId);
+        const relPath = await uploadFile(
+          audioBase64,
+          audioName,
+          conversationId,
+        );
         fileRefs.push(`[audio: ${relPath}]`);
-      } catch { /* continue without saving */ }
+      } catch {
+        /* continue without saving */
+      }
     }
 
     const parts: ContentPart[] = [];
@@ -159,7 +169,14 @@ export function ChatInput({
   };
 
   return (
-    <div className="relative z-10 border-t border-gold/10 p-3" style={{ background: "rgba(250,247,242,0.6)", backdropFilter: "blur(20px) saturate(130%)", WebkitBackdropFilter: "blur(20px) saturate(130%)" }}>
+    <div
+      className="relative z-10 border-t border-gold/10 p-3"
+      style={{
+        background: "rgba(250,247,242,0.6)",
+        backdropFilter: "blur(20px) saturate(130%)",
+        WebkitBackdropFilter: "blur(20px) saturate(130%)",
+      }}
+    >
       {/* Attachments preview */}
       {(imagePreview || audioName) && (
         <div className="mb-2 flex flex-wrap gap-2">
@@ -325,7 +342,8 @@ export function ChatInput({
             disabled={!text.trim() && !imageBase64 && !audioBase64}
             className="rounded-xl p-2 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
-              background: "linear-gradient(135deg, rgba(200,168,78,0.7), rgba(180,148,58,0.8))",
+              background:
+                "linear-gradient(135deg, rgba(200,168,78,0.7), rgba(180,148,58,0.8))",
               color: "#faf7f2",
               boxShadow: "0 2px 12px rgba(200,168,78,0.2)",
             }}
