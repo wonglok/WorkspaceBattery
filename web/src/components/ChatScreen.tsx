@@ -33,6 +33,11 @@ export function ChatScreen({ workspacePath }: Props) {
       ? "..." + workspacePath.slice(-37)
       : workspacePath;
 
+  // const hasMedia = (msg: { parts?: { type: string }[] }) =>
+  //   msg.parts?.some(
+  //     (p) => p.type === "image_url" || p.type === "input_audio",
+  //   ) ?? false;
+
   return (
     <div
       className="relative flex h-screen flex-col overflow-hidden"
@@ -221,9 +226,10 @@ export function ChatScreen({ workspacePath }: Props) {
                             />
                           );
                         }
+
                         if (part.type === "input_audio") {
                           return (
-                            <div className="w-[260px]">
+                            <div className="min-w-[260px]">
                               <audio
                                 key={i}
                                 controls
@@ -247,9 +253,10 @@ export function ChatScreen({ workspacePath }: Props) {
                         )}
                       </div>
                     )}
+
                     {msg.content && isUser && (
                       <p className="whitespace-pre-wrap wrap-break-word font-body text-base leading-relaxed">
-                        {msg.content}
+                        {typeof msg.content === "string" ? msg.content : ""}
                       </p>
                     )}
 
