@@ -542,6 +542,11 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 
 app.use(express.static(path.join(__dirname, "..", "dist")));
 
+// ---------------------------
+app.use(express.static(`${readConfig().workspace}`));
+
+//
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.path.startsWith("/api/") || req.path.startsWith("/v1/")) {
     return next();
