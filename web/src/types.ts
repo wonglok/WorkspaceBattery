@@ -7,6 +7,10 @@ export type ContentPart =
   | {
       type: "input_audio";
       input_audio: { data: string; format: "mp3" | "wav" | "ogg" | "webm" };
+    }
+  | {
+      type: "video";
+      video: { data: string; format: string; name: string };
     };
 
 export type MessageRole = "user" | "assistant" | "system";

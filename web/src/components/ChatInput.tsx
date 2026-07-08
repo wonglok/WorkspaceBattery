@@ -30,9 +30,13 @@ export function ChatInput({
   const [audioName, setAudioName] = useState<string | null>(null);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [audioFormat, setAudioFormat] = useState<string>("webm");
+  const [videoName, setVideoName] = useState<string | null>(null);
+  const [videoBase64, setVideoBase64] = useState<string | null>(null);
+  const [videoFormat, setVideoFormat] = useState<string>("mp4");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const voice = useVoiceRecorder();
 
   const adjustHeight = useCallback(() => {
@@ -69,6 +73,21 @@ export function ChatInput({
     reader.readAsDataURL(file);
   };
 
+  const handleVideoAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUri = reader.result as string;
+      const base64 = dataUri.split(",")[1] ?? "";
+      setVideoName(file.name);
+      setVideoBase64(base64);
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "mp4";
+      setVideoFormat(ext);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleVoiceRecord = async () => {
     if (voice.isRecording) {
       const blob = await voice.stopRecording();
@@ -83,7 +102,7 @@ export function ChatInput({
   };
 
   const handleSend = async () => {
-    const hasContent = text.trim() || imageBase64 || audioBase64;
+    const hasContent = text.trim() || imageBase64 || audioBase64 || videoBase64;
     if (!hasContent || isStreaming) return;
 
     const fileRefs: string[] = [];
@@ -118,6 +137,20 @@ export function ChatInput({
       }
     }
 
+    // Upload video
+    if (videoBase64 && videoName) {
+      try {
+        const relPath = await uploadFile(
+          videoBase64,
+          videoName,
+          conversationId,
+        );
+        fileRefs.push(`[video: ${relPath}]`);
+      } catch {
+        /* continue without saving */
+      }
+    }
+
     const parts: ContentPart[] = [];
 
     // Prepend file references to the text
@@ -137,6 +170,12 @@ export function ChatInput({
         input_audio: { data: audioBase64, format: audioFormat as any },
       });
     }
+    if (videoBase64 && videoName) {
+      parts.push({
+        type: "video",
+        video: { data: videoBase64, format: videoFormat, name: videoName },
+      });
+    }
 
     onSend(parts);
     setText("");
@@ -145,6 +184,9 @@ export function ChatInput({
     setAudioName(null);
     setAudioBase64(null);
     setAudioFormat("webm");
+    setVideoName(null);
+    setVideoBase64(null);
+    setVideoFormat("mp4");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -170,6 +212,13 @@ export function ChatInput({
     if (audioInputRef.current) audioInputRef.current.value = "";
   };
 
+  const clearVideo = () => {
+    setVideoName(null);
+    setVideoBase64(null);
+    setVideoFormat("mp4");
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
+
   return (
     <div
       className="relative z-10 border-t border-gold/10 p-3"
@@ -180,7 +229,7 @@ export function ChatInput({
       }}
     >
       {/* Attachments preview */}
-      {(imagePreview || audioName) && (
+      {(imagePreview || audioName || videoName) && (
         <div className="mb-2 flex flex-wrap gap-2">
           {imagePreview && (
             <div className="inline-flex items-center gap-1.5 rounded-xl bg-white/60 px-2.5 py-1.5 font-body text-xs text-ink-soft shadow-sm backdrop-blur-sm">
@@ -203,6 +252,25 @@ export function ChatInput({
               {audioName}
               <button
                 onClick={clearAudio}
+                className="ml-1 text-ink-faint/40 transition-colors hover:text-rose-deep"
+              >
+                &#x2715;
+              </button>
+            </div>
+          )}
+          {videoName && (
+            <div className="inline-flex items-center gap-1.5 rounded-xl bg-white/60 px-2.5 py-1.5 font-body text-xs text-ink-soft shadow-sm backdrop-blur-sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-4 w-4 text-ink-faint/50"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              {videoName}
+              <button
+                onClick={clearVideo}
                 className="ml-1 text-ink-faint/40 transition-colors hover:text-rose-deep"
               >
                 &#x2715;
@@ -283,6 +351,33 @@ export function ChatInput({
           className="hidden"
         />
 
+        {/* Video attach */}
+        <button
+          onClick={() => videoInputRef.current?.click()}
+          disabled={isStreaming}
+          className="rounded-xl p-2 text-ink-faint/60 transition-all duration-300 hover:text-gold/60 hover:bg-white/40 disabled:opacity-30"
+          title="Attach video"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="h-5 w-5"
+          >
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <polygon points="10,8.5 16,12 10,15.5" fill="currentColor" />
+          </svg>
+        </button>
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/*"
+          onChange={handleVideoAttach}
+          className="hidden"
+        />
+
         {/* Voice record */}
         {voice.isSupported && (
           <button
@@ -341,7 +436,7 @@ export function ChatInput({
         ) : (
           <button
             onClick={handleSend}
-            disabled={!text.trim() && !imageBase64 && !audioBase64}
+            disabled={!text.trim() && !imageBase64 && !audioBase64 && !videoBase64}
             className="rounded-xl p-2 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
               background: "linear-gradient(135deg, #c8a84e 0%, #a6802e 100%)",

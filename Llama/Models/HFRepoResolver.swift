@@ -251,13 +251,13 @@ enum HFRepoResolver {
     // of a sharded set. For sharded quants, compatibility uses the sum of all
     // shard sizes when HF provided per-shard sizes; otherwise we fall back to
     // the first shard's size.
-    let selectable = allGgufs.filter { sib in
-      let name = (sib.rfilename as NSString).lastPathComponent
-      if name.lowercased().hasPrefix("mmproj") { return false }
-      if name.lowercased().contains("imatrix") { return false }
-      if HFRepoParser.isSplitShard(name) && !HFRepoParser.isFirstShard(name) { return false }
-      return true
-    }
+   let selectable = allGgufs.filter { sib in
+     let name = (sib.rfilename as NSString).lastPathComponent
+      if HFCache.isMmprojFile(name) { return false }
+     if name.lowercased().contains("imatrix") { return false }
+     if HFRepoParser.isSplitShard(name) && !HFRepoParser.isFirstShard(name) { return false }
+     return true
+   }
     guard !selectable.isEmpty else { throw ResolveError.noGgufFiles(repo) }
 
     let compatible = selectable.filter {
@@ -383,17 +383,20 @@ enum HFRepoResolver {
   /// Picks an mmproj sidecar: a lone `mmproj*.gguf` sibling, else nothing
   /// (logs when multiple candidates exist — picking silently would risk
   /// installing the wrong variant, e.g. F16 vs Q8, for vision).
-  private static func pickMmproj(repo: String, siblings: [Sibling]) -> Sibling? {
-    let candidates = siblings.filter { sib in
-      let name = (sib.rfilename as NSString).lastPathComponent.lowercased()
-      return name.hasPrefix("mmproj") && name.hasSuffix(".gguf")
-    }
-    guard !candidates.isEmpty else { return nil }
+ private static func pickMmproj(repo: String, siblings: [Sibling]) -> Sibling? {
+   let candidates = siblings.filter { sib in
+      HFCache.isMmprojFile(sib.rfilename)
+   }
+   guard !candidates.isEmpty else { return nil }
 
     if candidates.count == 1 { return candidates[0] }
 
-    logger.info("Multiple mmproj candidates in \(repo); skipping attach.")
-    return nil
+    // Multiple candidates -- prefer F16 (standard quality, compact), then smallest.
+    // mmproj-F16 is the typical choice; avoids the ambiguity that led to skipping.
+    if let f16 = candidates.first(where: { $0.rfilename.contains("-F16.") }) {
+      return f16
+    }
+    return candidates.min { ($0.size ?? 0) < ($1.size ?? 0) }
   }
 
   /// Picks the MTP draft-head sidecar (`mtp-….gguf`) for the chosen main quant.

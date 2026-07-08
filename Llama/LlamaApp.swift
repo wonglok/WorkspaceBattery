@@ -121,6 +121,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     WebServerManager.shared.start()
     logger.info("Web URL: \(WebServerManager.webUrl)")
 
+    // Auto-download a default model if nothing is installed yet
+    DispatchQueue.main.async {
+      let manager = ModelManager.shared
+      guard manager.downloadedModels.isEmpty, manager.downloadingModels.isEmpty else { return }
+      DeeplinkHandler.shared.install(repo: "google/gemma-4-E2B-it-qat-q4_0-gguf", quant: "Q4_0", announce: true)
+    }
+
 
     logger.info("Llama startup complete")
   }

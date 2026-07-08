@@ -534,11 +534,21 @@ enum HFCache {
       let fileName = URL(fileURLWithPath: relativePath).lastPathComponent.lowercased()
       // Skip mmproj (vision projection) and mtp- (speculative draft head)
       // sidecars -- neither is a runnable model on its own.
-      return fileName.hasSuffix(".gguf")
-        && !fileName.hasPrefix("mmproj")
-        && !fileName.hasPrefix("mtp-")
-    }
+     return fileName.hasSuffix(".gguf")
+       && !isMmprojFile(fileName)
+       && !fileName.hasPrefix("mtp-")
+   }
+ }
+
+  /// Checks whether `name` is an mmproj sidecar file by matching `mmproj`
+  /// as a delimited token in the filename stem (before `.gguf`). Covers both
+  /// the prefix convention (`mmproj-model.gguf`) and the suffix convention
+  /// (`gemma-4-E2B-it-mmproj.gguf`).
+  static func isMmprojFile(_ name: String) -> Bool {
+    let stem = (name as NSString).deletingPathExtension.lowercased()
+    return stem.range(of: #"(?:^|[-_.])mmproj(?:[-_.]|$)"#, options: .regularExpression) != nil
   }
+
 
   /// Builds a `Model` + `ResolvedPaths` from a discovered GGUF file.
   ///
@@ -726,12 +736,11 @@ enum HFCache {
   /// Returns the lone `mmproj*.gguf` in `dir`, or nil if there are none or more
   /// than one (ambiguous — matching `pickMmproj`'s skip-when-ambiguous policy).
   private static func singleMmproj(in dir: URL, fm: FileManager) -> String? {
-    guard let entries = try? fm.contentsOfDirectory(atPath: dir.path) else { return nil }
-    let candidates = entries.filter {
-      let name = $0.lowercased()
-      return name.hasPrefix("mmproj") && name.hasSuffix(".gguf")
-    }
-    guard candidates.count == 1 else { return nil }
+   guard let entries = try? fm.contentsOfDirectory(atPath: dir.path) else { return nil }
+   let candidates = entries.filter {
+      isMmprojFile($0)
+   }
+   guard candidates.count == 1 else { return nil }
     return dir.appendingPathComponent(candidates[0]).path
   }
 }

@@ -9,12 +9,12 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
   private let pasteButton = NSButton()
   private let downloadButton = NSButton()
 
-  // Gemma 4 E2B Q4_0
+  // Unsloth Gemma 4 E2B
   private let gemmaE2BIcon = IconView()
   private let gemmaE2BLabel = NSTextField()
   private let gemmaE2BButton = NSButton()
 
-  // Gemma 4 E4B Q4_0
+  // Unsloth Gemma 4 E4B
   private let gemmaE4BIcon = IconView()
   private let gemmaE4BLabel = NSTextField()
   private let gemmaE4BButton = NSButton()
@@ -52,8 +52,8 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     pasteButton.target = self
     pasteButton.action = #selector(didClickPaste)
 
-    // --- Gemma 4 E2B Q4_0 ---
-    Theme.configure(gemmaE2BButton, symbol: "arrow.down.circle", tooltip: "Download Gemma 4 (E2B Q4_0 GGUF)", pointSize: 20)
+    // --- Unsloth Gemma 4 E2B ---
+    Theme.configure(gemmaE2BButton, symbol: "arrow.down.circle", tooltip: "Download Google Gemma 4 E2B Q4_0 GGUF", pointSize: 20)
     gemmaE2BButton.target = self
     gemmaE2BButton.action = #selector(didClickGemmaE2BDownload)
     gemmaE2BButton.contentTintColor = Theme.Colors.success
@@ -71,8 +71,8 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     gemmaE2BLabel.translatesAutoresizingMaskIntoConstraints = false
     gemmaE2BLabel.lineBreakMode = .byTruncatingTail
 
-    // --- Gemma 4 E4B Q4_0 ---
-    Theme.configure(gemmaE4BButton, symbol: "arrow.down.circle", tooltip: "Download Gemma 4 (E4B Q4_0 GGUF)", pointSize: 20)
+    // --- Unsloth Gemma 4 E4B ---
+    Theme.configure(gemmaE4BButton, symbol: "arrow.down.circle", tooltip: "Download Google Gemma 4 E4B Q4_0 GGUF", pointSize: 20)
     gemmaE4BButton.target = self
     gemmaE4BButton.action = #selector(didClickGemmaE4BDownload)
     gemmaE4BButton.contentTintColor = Theme.Colors.success
@@ -140,7 +140,7 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     pasteButton.setContentHuggingPriority(.required, for: .horizontal)
     pasteButton.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-    // Gemma 4 E2B Q4_0
+    // Unsloth Gemma 4 E2B
     gemmaE2BButton.widthAnchor.constraint(equalToConstant: 28).isActive = true
     gemmaE2BButton.heightAnchor.constraint(equalTo: gemmaE2BButton.widthAnchor).isActive = true
     gemmaE2BButton.setContentHuggingPriority(.required, for: .horizontal)
@@ -148,7 +148,7 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     gemmaE2BLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     gemmaE2BLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-    // Gemma 4 E4B Q4_0
+    // Unsloth Gemma 4 E4B
     gemmaE4BButton.widthAnchor.constraint(equalToConstant: 28).isActive = true
     gemmaE4BButton.heightAnchor.constraint(equalTo: gemmaE4BButton.widthAnchor).isActive = true
     gemmaE4BButton.setContentHuggingPriority(.required, for: .horizontal)
@@ -187,12 +187,12 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
   }
 
   @objc private func didClickGemmaE2BDownload() {
-    onInstall("google/gemma-4-E2B-it-qat-q4_0-gguf", nil)
+    onInstall("google/gemma-4-E2B-it-qat-q4_0-gguf", "Q4_0")
     textField.stringValue = ""
   }
 
   @objc private func didClickGemmaE4BDownload() {
-    onInstall("google/gemma-4-E4B-it-qat-q4_0-gguf", nil)
+    onInstall("google/gemma-4-E4B-it-qat-q4_0-gguf", "Q4_0")
     textField.stringValue = ""
   }
 

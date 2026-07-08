@@ -232,6 +232,18 @@ export function ChatScreen({ workspacePath }: Props) {
                             </div>
                           );
                         }
+
+                        if (part.type === "video") {
+                          return (
+                            <div key={i} className="min-w-[260px]">
+                              <video
+                                controls
+                                className="mb-2 max-h-64 w-full rounded-xl object-contain"
+                                src={`data:video/${part.video.format};base64,${part.video.data}`}
+                              />
+                            </div>
+                          );
+                        }
                         return null;
                       })}
 
