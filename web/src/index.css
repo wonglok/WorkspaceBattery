@@ -435,3 +435,7 @@ body::before {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+#root pre {
+  white-space: pre-wrap;
+}

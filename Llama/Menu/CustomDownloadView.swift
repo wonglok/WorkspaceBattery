@@ -10,14 +10,14 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
   private let downloadButton = NSButton()
 
   // Gemma 4 E2B Q4_0
-  private let gemmaIcon = IconView()
-  private let gemmaLabel = NSTextField()
-  private let gemmaButton = NSButton()
+  private let gemmaE2BIcon = IconView()
+  private let gemmaE2BLabel = NSTextField()
+  private let gemmaE2BButton = NSButton()
 
-  // Gemma 4 26B A4B QAT
-  private let gemma26Icon = IconView()
-  private let gemma26Label = NSTextField()
-  private let gemma26Button = NSButton()
+  // Gemma 4 E4B Q4_0
+  private let gemmaE4BIcon = IconView()
+  private let gemmaE4BLabel = NSTextField()
+  private let gemmaE4BButton = NSButton()
 
   private let onInstall: (String, String?) -> Void
 
@@ -53,42 +53,42 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     pasteButton.action = #selector(didClickPaste)
 
     // --- Gemma 4 E2B Q4_0 ---
-    Theme.configure(gemmaButton, symbol: "arrow.down.circle", tooltip: "Download Gemma 4 (E2B Q4_0 GGUF)", pointSize: 20)
-    gemmaButton.target = self
-    gemmaButton.action = #selector(didClickGemmaDownload)
-    gemmaButton.contentTintColor = Theme.Colors.success
+    Theme.configure(gemmaE2BButton, symbol: "arrow.down.circle", tooltip: "Download Gemma 4 (E2B Q4_0 GGUF)", pointSize: 20)
+    gemmaE2BButton.target = self
+    gemmaE2BButton.action = #selector(didClickGemmaE2BDownload)
+    gemmaE2BButton.contentTintColor = Theme.Colors.success
 
-    gemmaIcon.imageView.image = NSImage(named: "ModelLogos/gemma")
-    gemmaIcon.inactiveTintColor = Theme.Colors.modelIconTint
+    gemmaE2BIcon.imageView.image = NSImage(named: "ModelLogos/gemma")
+    gemmaE2BIcon.inactiveTintColor = Theme.Colors.modelIconTint
 
-    gemmaLabel.stringValue = "Download Gemma 4 E2B Q4_0"
-    gemmaLabel.font = Theme.Fonts.secondary
-    gemmaLabel.textColor = Theme.Colors.textPrimary
-    gemmaLabel.isEditable = false
-    gemmaLabel.isSelectable = false
-    gemmaLabel.isBordered = false
-    gemmaLabel.backgroundColor = .clear
-    gemmaLabel.translatesAutoresizingMaskIntoConstraints = false
-    gemmaLabel.lineBreakMode = .byTruncatingTail
+    gemmaE2BLabel.stringValue = "Download Gemma 4 E2B Q4_0"
+    gemmaE2BLabel.font = Theme.Fonts.secondary
+    gemmaE2BLabel.textColor = Theme.Colors.textPrimary
+    gemmaE2BLabel.isEditable = false
+    gemmaE2BLabel.isSelectable = false
+    gemmaE2BLabel.isBordered = false
+    gemmaE2BLabel.backgroundColor = .clear
+    gemmaE2BLabel.translatesAutoresizingMaskIntoConstraints = false
+    gemmaE2BLabel.lineBreakMode = .byTruncatingTail
 
-    // --- Gemma 4 26B A4B QAT ---
-    Theme.configure(gemma26Button, symbol: "arrow.down.circle", tooltip: "Download Gemma 4 (26B A4B QAT GGUF)", pointSize: 20)
-    gemma26Button.target = self
-    gemma26Button.action = #selector(didClickGemma26Download)
-    gemma26Button.contentTintColor = Theme.Colors.success
+    // --- Gemma 4 E4B Q4_0 ---
+    Theme.configure(gemmaE4BButton, symbol: "arrow.down.circle", tooltip: "Download Gemma 4 (E4B Q4_0 GGUF)", pointSize: 20)
+    gemmaE4BButton.target = self
+    gemmaE4BButton.action = #selector(didClickGemmaE4BDownload)
+    gemmaE4BButton.contentTintColor = Theme.Colors.success
 
-    gemma26Icon.imageView.image = NSImage(named: "ModelLogos/gemma")
-    gemma26Icon.inactiveTintColor = Theme.Colors.modelIconTint
+    gemmaE4BIcon.imageView.image = NSImage(named: "ModelLogos/gemma")
+    gemmaE4BIcon.inactiveTintColor = Theme.Colors.modelIconTint
 
-    gemma26Label.stringValue = "Download Gemma 4 26B A4B QAT"
-    gemma26Label.font = Theme.Fonts.secondary
-    gemma26Label.textColor = Theme.Colors.textPrimary
-    gemma26Label.isEditable = false
-    gemma26Label.isSelectable = false
-    gemma26Label.isBordered = false
-    gemma26Label.backgroundColor = .clear
-    gemma26Label.translatesAutoresizingMaskIntoConstraints = false
-    gemma26Label.lineBreakMode = .byTruncatingTail
+    gemmaE4BLabel.stringValue = "Download Gemma 4 E4B Q4_0"
+    gemmaE4BLabel.font = Theme.Fonts.secondary
+    gemmaE4BLabel.textColor = Theme.Colors.textPrimary
+    gemmaE4BLabel.isEditable = false
+    gemmaE4BLabel.isSelectable = false
+    gemmaE4BLabel.isBordered = false
+    gemmaE4BLabel.backgroundColor = .clear
+    gemmaE4BLabel.translatesAutoresizingMaskIntoConstraints = false
+    gemmaE4BLabel.lineBreakMode = .byTruncatingTail
 
     // --- Layout ---
     let topRow = NSStackView(views: [textField, pasteButton, downloadButton])
@@ -96,25 +96,31 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     topRow.spacing = 6
     topRow.alignment = .centerY
 
-    let spacer = NSView()
-    spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-    spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    let spacerE2B = NSView()
+    spacerE2B.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    spacerE2B.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-    let gemmaRow = NSStackView(views: [gemmaIcon, gemmaLabel, spacer, gemmaButton])
-    gemmaRow.orientation = .horizontal
-    gemmaRow.spacing = 6
-    gemmaRow.alignment = .centerY
+    let gemmaE2BRow = NSStackView(views: [gemmaE2BIcon, gemmaE2BLabel, spacerE2B, gemmaE2BButton])
+    gemmaE2BRow.orientation = .horizontal
+    gemmaE2BRow.spacing = 6
+    gemmaE2BRow.alignment = .centerY
+    let clickE2B = NSClickGestureRecognizer(target: self, action: #selector(didClickGemmaE2BDownload))
+    clickE2B.buttonMask = 0x1
+    gemmaE2BRow.addGestureRecognizer(clickE2B)
 
-    let spacer26 = NSView()
-    spacer26.setContentHuggingPriority(.defaultLow, for: .horizontal)
-    spacer26.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    let spacerE4B = NSView()
+    spacerE4B.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    spacerE4B.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-    let gemma26Row = NSStackView(views: [gemma26Icon, gemma26Label, spacer26, gemma26Button])
-    gemma26Row.orientation = .horizontal
-    gemma26Row.spacing = 6
-    gemma26Row.alignment = .centerY
+    let gemmaE4BRow = NSStackView(views: [gemmaE4BIcon, gemmaE4BLabel, spacerE4B, gemmaE4BButton])
+    gemmaE4BRow.orientation = .horizontal
+    gemmaE4BRow.spacing = 6
+    gemmaE4BRow.alignment = .centerY
+    let clickE4B = NSClickGestureRecognizer(target: self, action: #selector(didClickGemmaE4BDownload))
+    clickE4B.buttonMask = 0x1
+    gemmaE4BRow.addGestureRecognizer(clickE4B)
 
-    let rootStack = NSStackView(views: [topRow, gemmaRow, gemma26Row])
+    let rootStack = NSStackView(views: [topRow, gemmaE2BRow, gemmaE4BRow])
     rootStack.orientation = .vertical
     rootStack.spacing = 4
     rootStack.alignment = .leading
@@ -134,32 +140,27 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     pasteButton.setContentHuggingPriority(.required, for: .horizontal)
     pasteButton.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-    // Gemma 4 E2B
-    gemmaButton.widthAnchor.constraint(equalToConstant: 28).isActive = true
-    gemmaButton.heightAnchor.constraint(equalTo: gemmaButton.widthAnchor).isActive = true
-    gemmaButton.setContentHuggingPriority(.required, for: .horizontal)
-    gemmaButton.setContentCompressionResistancePriority(.required, for: .horizontal)
-    gemmaLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-    gemmaLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    // Gemma 4 E2B Q4_0
+    gemmaE2BButton.widthAnchor.constraint(equalToConstant: 28).isActive = true
+    gemmaE2BButton.heightAnchor.constraint(equalTo: gemmaE2BButton.widthAnchor).isActive = true
+    gemmaE2BButton.setContentHuggingPriority(.required, for: .horizontal)
+    gemmaE2BButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+    gemmaE2BLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+    gemmaE2BLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-    // Gemma 4 26B
-    gemma26Button.widthAnchor.constraint(equalToConstant: 28).isActive = true
-    gemma26Button.heightAnchor.constraint(equalToConstant: 28).isActive = true
-    gemma26Button.setContentHuggingPriority(.required, for: .horizontal)
-    gemma26Button.setContentCompressionResistancePriority(.required, for: .horizontal)
-    gemma26Label.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-    gemma26Label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    // Gemma 4 E4B Q4_0
+    gemmaE4BButton.widthAnchor.constraint(equalToConstant: 28).isActive = true
+    gemmaE4BButton.heightAnchor.constraint(equalTo: gemmaE4BButton.widthAnchor).isActive = true
+    gemmaE4BButton.setContentHuggingPriority(.required, for: .horizontal)
+    gemmaE4BButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+    gemmaE4BLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+    gemmaE4BLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
   }
 
   // MARK: - Event forwarding
 
   override func hitTest(_ point: NSPoint) -> NSView? {
-    // The menu item is disabled (so the menu doesn't close on click), which
-    // prevents the text field from receiving mouse events through the normal
-    // responder chain. Override hitTest so clicks on the text field or the
-    // download button dispatch directly to those subviews, letting them handle
-    // first-responder acquisition, text selection, and paste naturally.
-    for target in [textField, pasteButton, downloadButton, gemmaButton, gemma26Button] as [NSView] {
+    for target in [textField, pasteButton, downloadButton, gemmaE2BButton, gemmaE4BButton] as [NSView] {
       let local = target.convert(point, from: self)
       if target.bounds.contains(local) {
         return target
@@ -171,8 +172,6 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
   // MARK: - Actions
 
   override func mouseDown(with event: NSEvent) {
-    // Fallback: ensure the text field grabs focus even when hitTest doesn't
-    // resolve to it (e.g. clicks on the padding area around it).
     window?.makeFirstResponder(textField)
   }
 
@@ -187,13 +186,13 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     performDownload()
   }
 
-  @objc private func didClickGemmaDownload() {
+  @objc private func didClickGemmaE2BDownload() {
     onInstall("google/gemma-4-E2B-it-qat-q4_0-gguf", nil)
     textField.stringValue = ""
   }
 
-  @objc private func didClickGemma26Download() {
-    onInstall("google/gemma-4-26B-A4B-it-qat-q4_0-gguf", nil)
+  @objc private func didClickGemmaE4BDownload() {
+    onInstall("google/gemma-4-E4B-it-qat-q4_0-gguf", nil)
     textField.stringValue = ""
   }
 
@@ -209,7 +208,6 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
     let raw = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !raw.isEmpty else { return }
 
-    // Parse "org/repo:QUANT" or just "org/repo"
     let parts = raw.split(separator: ":", maxSplits: 1)
     let repo: String
     let quant: String?
@@ -222,7 +220,6 @@ final class CustomDownloadView: ItemView, NSTextFieldDelegate {
       quant = nil
     }
 
-    // Basic validation: must contain a slash (org/repo format)
     guard repo.contains("/") else {
       NSSound.beep()
       return
