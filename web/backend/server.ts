@@ -244,8 +244,9 @@ const TOOLS: ToolDef[] = [
         },
       },
     },
-    (input, root) =>
-      readFileSync(safeResolve(root, input.path as string), "utf-8"),
+    (input, root) => {
+      return readFileSync(safeResolve(root, input.path as string), "utf-8");
+    },
   ),
   defineTool(
     {
@@ -543,7 +544,6 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 app.use(express.static(path.join(__dirname, "..", "dist")));
 
 // ---------------------------
-app.use(express.static(`${readConfig().workspace}`));
 
 //
 
