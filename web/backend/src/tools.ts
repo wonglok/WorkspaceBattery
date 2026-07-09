@@ -286,7 +286,7 @@ export const TOOLS: ToolDef[] = [
             ],
           },
         ],
-        max_tokens: 1024,
+        max_tokens: 4096,
       });
 
       return resp.choices[0]?.message?.content ?? "No description available.";
