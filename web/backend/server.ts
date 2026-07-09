@@ -216,6 +216,8 @@ function defineTool(
   return { json, fn };
 }
 
+let currentModel = "";
+
 const TOOLS: ToolDef[] = [
   defineTool(
     {
@@ -404,7 +406,7 @@ const TOOLS: ToolDef[] = [
       });
 
       const resp = await visionClient.chat.completions.create({
-        model: selectedModelGlobal ?? "",
+        model: currentModel,
         messages: [
           {
             role: "user",
