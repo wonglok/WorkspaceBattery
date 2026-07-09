@@ -102,14 +102,6 @@ export function ChatScreen({ workspacePath }: Props) {
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <button
-            onClick={clearMessages}
-            className="rounded-full px-3 py-1.5 font-body text-xs italic text-ink-faint/60 transition-all duration-300 hover:text-gold hover:bg-white/30"
-          >
-            Clear
-          </button>
-        </div>
       </header>
 
       {/* Messages */}
@@ -344,6 +336,7 @@ export function ChatScreen({ workspacePath }: Props) {
                                     />
                                   );
                                 }
+
                                 return (
                                   <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap font-body text-[10px] leading-relaxed text-ink-faint/50">
                                     {tc.output}
