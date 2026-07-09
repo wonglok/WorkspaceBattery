@@ -294,4 +294,38 @@ export const TOOLS: ToolDef[] = [
       );
     },
   ),
+  defineTool(
+    {
+      type: "function",
+      function: {
+        name: "openInBrowser",
+        description:
+          "Open an HTML file from the workspace in the system browser. Use this to preview web pages you've created. Path is relative to workspace root.",
+        parameters: {
+          type: "object",
+          properties: {
+            path: {
+              type: "string",
+              description:
+                "Relative path to the HTML file from workspace root",
+            },
+          },
+          required: ["path"],
+        },
+      },
+    },
+    (input, root) => {
+      const filePath = safeResolve(root, input.path as string);
+      if (!existsSync(filePath)) {
+        return `Error: file not found at ${input.path}`;
+      }
+      const url = `http://localhost:8555/${input.path}`;
+      try {
+        execSync(`open "${url}"`);
+        return `Opened in browser: ${url}`;
+      } catch {
+        return `Error: failed to open browser. URL: ${url}`;
+      }
+    },
+  ),
 ];

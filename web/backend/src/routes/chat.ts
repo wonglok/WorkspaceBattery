@@ -61,6 +61,7 @@ router.post("/chat", async (req: Request, res: Response) => {
     `- displayImage(path, alt?): Display an image from the workspace in the chat. Use after writing an image file to show it to the user. Returns a markdown image that renders in the frontend UI.`,
     `- saveMemory(content): Save important information to your persistent memory file. Use to remember user preferences, project context, or anything the user asks you to keep. Memory persists across conversations.`,
     `- readImage(path): Read and describe an image file from the workspace using AI vision. Returns a textual description of what's in the image.`,
+    `- openInBrowser(path): Open an HTML file from the workspace in the system browser (served at http://localhost:8555/). Use to preview web pages you've created.`,
     ``,
     `Always explain what you're doing before using a tool. Be concise.`,
     ``,
