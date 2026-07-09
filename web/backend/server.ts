@@ -322,7 +322,7 @@ const TOOLS: ToolDef[] = [
     {
       type: "function",
       function: {
-        name: "remember",
+        name: "saveMemory",
         description:
           "Save important information to your persistent memory file. Use this to remember user preferences, project context, decisions, or any information the user asks you to remember. The memory persists across conversations.",
         parameters: {
@@ -423,11 +423,11 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     `- writeFile(path, content): Write content to a file. Creates parent directories automatically.`,
     `- listDir(path): List files and directories (relative to workspace root, default: root)`,
     `- displayImage(path, alt?): Display an image from the workspace in the chat. Use after writing an image file to show it to the user. Returns a markdown image that renders in the frontend UI.`,
-    `- remember(content): Save important information to your persistent memory file. Use to remember user preferences, project context, or anything the user asks you to keep. Memory persists across conversations.`,
+    `- saveMemory(content): Save important information to your persistent memory file. Use to remember user preferences, project context, or anything the user asks you to keep. Memory persists across conversations.`,
     ``,
     `Always explain what you're doing before using a tool. Be concise.`,
     ``,
-    `Memory: Use the remember tool whenever you learn something worth keeping — user preferences, project decisions, key context, or when the user explicitly asks you to remember something. Your memory is loaded at the start of every conversation, so anything important should be saved.`,
+    `Memory: Use the saveMemory tool whenever you learn something worth keeping — user preferences, project decisions, key context, or when the user explicitly asks you to remember something. Your memory is loaded at the start of every conversation, so anything important should be saved. If you don't yet know the user's name, ask for it and remember it.`,
     conversationId ? `\nConversation ID: ${conversationId}` : "",
     `User attachments for this conversation are saved in: upload/${conversationId}/`,
     workspaceMemory ? `\n## My System Memory:\n\n${workspaceMemory}` : "",
