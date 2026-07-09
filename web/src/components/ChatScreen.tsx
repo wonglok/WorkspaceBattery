@@ -294,13 +294,33 @@ export function ChatScreen({ workspacePath }: Props) {
                             {tc.status === "error" && (
                               <span className="ml-2 text-rose-400">error</span>
                             )}
-                            {tc.output && (
+                            {tc.output && tc.name === "displayImage" && tc.status === "done" ? (
+                              (() => {
+                                const m = tc.output.match(
+                                  /^!\[(.*)\]\((.*)\)$/,
+                                );
+                                if (m) {
+                                  return (
+                                    <img
+                                      src={m[2]}
+                                      alt={m[1]}
+                                      className="mt-1 max-h-64 max-w-full rounded-xl object-contain"
+                                    />
+                                  );
+                                }
+                                return (
+                                  <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap font-body text-[10px] leading-relaxed text-ink-faint/50">
+                                    {tc.output}
+                                  </pre>
+                                );
+                              })()
+                            ) : tc.output ? (
                               <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap font-body text-[10px] leading-relaxed text-ink-faint/50">
                                 {tc.output.length > 300
                                   ? tc.output.slice(0, 300) + "..."
                                   : tc.output}
                               </pre>
-                            )}
+                            ) : null}
                           </div>
                         ))}
                       </div>

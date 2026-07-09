@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { uploadFile } from "../api";
 import type { ContentPart } from "../types";
@@ -46,14 +47,61 @@ export function ChatInput({
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, []);
 
+  // Convert image to PNG, max 2048px on longest side, same aspect ratio
+  const processImage = useCallback(
+    (src: string): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 2048;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            const ratio = Math.min(MAX / width, MAX / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("Canvas context unavailable"));
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = src;
+      }),
+    [],
+  );
+
   const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const needsConvert = ["svg", "webp", "gif"].includes(ext);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUri = reader.result as string;
-      setImagePreview(dataUri);
-      setImageBase64(dataUri);
+      if (needsConvert) {
+        try {
+          const png = await processImage(dataUri);
+          setImagePreview(png);
+          setImageBase64(png);
+        } catch {
+          setImagePreview(dataUri);
+          setImageBase64(dataUri);
+        }
+      } else {
+        // Still resize if > 2048px
+        try {
+          const resized = await processImage(dataUri);
+          setImagePreview(resized);
+          setImageBase64(resized);
+        } catch {
+          setImagePreview(dataUri);
+          setImageBase64(dataUri);
+        }
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -94,7 +142,7 @@ export function ChatInput({
     setShowCamera(false);
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -103,9 +151,15 @@ export function ChatInput({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0);
-    const dataUri = canvas.toDataURL("image/png");
-    setImagePreview(dataUri);
-    setImageBase64(dataUri);
+    const raw = canvas.toDataURL("image/png");
+    try {
+      const processed = await processImage(raw);
+      setImagePreview(processed);
+      setImageBase64(processed);
+    } catch {
+      setImagePreview(raw);
+      setImageBase64(raw);
+    }
     closeCamera();
   };
 
@@ -453,44 +507,46 @@ export function ChatInput({
       {/* Hidden canvas for photo capture */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Camera modal */}
-      {showCamera && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="relative overflow-hidden rounded-2xl bg-zinc-900 shadow-2xl">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="max-h-[80vh] max-w-[90vw]"
-            />
-            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-6 p-4 bg-linear-to-t from-black/70 to-transparent">
-              <button
-                onClick={closeCamera}
-                className="rounded-full bg-white/20 p-3 text-white transition-all hover:bg-white/30"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-5 w-5"
+      {/* Camera modal — portalled to body to escape backdrop-filter containing block */}
+      {showCamera &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-zinc-900 shadow-2xl">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="h-[80vh] w-[90vw] object-cover"
+              />
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-6 p-4 bg-linear-to-t from-black/70 to-transparent">
+                <button
+                  onClick={closeCamera}
+                  className="rounded-full bg-white/20 p-3 text-white transition-all hover:bg-white/30"
                 >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-              <button
-                onClick={capturePhoto}
-                className="rounded-full border-[3px] border-white p-4 transition-all hover:scale-110 active:scale-95"
-              >
-                <div className="h-8 w-8 rounded-full bg-white" />
-              </button>
-              <div className="w-11" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-5 w-5"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+                <button
+                  onClick={capturePhoto}
+                  className="rounded-full border-[3px] border-white p-4 transition-all hover:scale-110 active:scale-95"
+                >
+                  <div className="h-8 w-8 rounded-full bg-white" />
+                </button>
+                <div className="w-11" />
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

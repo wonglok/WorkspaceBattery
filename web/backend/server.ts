@@ -6,6 +6,7 @@
 // Start:  npx tsx server.ts [--port PORT]
 // Default port: 8391
 
+import cors from "cors";
 import express, {
   type Request,
   type Response,
@@ -15,6 +16,7 @@ import path from "path";
 import {
   readFileSync,
   writeFileSync,
+  appendFileSync,
   readdirSync,
   existsSync,
   mkdirSync,
@@ -51,28 +53,7 @@ if (PPID) {
 // Middleware
 // ---------------------------------------------------------------------------
 
-app.use((_req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With",
-  );
-  res.setHeader(
-    "Access-Control-Expose-Headers",
-    "Content-Length, Content-Type",
-  );
-
-  if (_req.method === "OPTIONS") {
-    res.sendStatus(204);
-    return;
-  }
-
-  next();
-});
+app.use(cors());
 
 app.use(express.json({ limit: "4096MB" }));
 
@@ -304,6 +285,70 @@ const TOOLS: ToolDef[] = [
         .join("\n");
     },
   ),
+  defineTool(
+    {
+      type: "function",
+      function: {
+        name: "displayImage",
+        description:
+          "Display an image from the workspace in the chat. Returns a markdown image tag that renders in the frontend. Use after writing an image file to show it to the user. Path is relative to workspace root.",
+        parameters: {
+          type: "object",
+          properties: {
+            path: {
+              type: "string",
+              description:
+                "Relative path to the image file from workspace root",
+            },
+            alt: {
+              type: "string",
+              description: "Alt text / caption for the image",
+            },
+          },
+          required: ["path"],
+        },
+      },
+    },
+    (input, root) => {
+      const filePath = safeResolve(root, input.path as string);
+      if (!existsSync(filePath)) {
+        return `Error: image not found at ${input.path}`;
+      }
+      const alt = (input.alt as string) || (input.path as string);
+      return `![${alt}](http://localhost:8555/${input.path})`;
+    },
+  ),
+  defineTool(
+    {
+      type: "function",
+      function: {
+        name: "remember",
+        description:
+          "Save important information to your persistent memory file. Use this to remember user preferences, project context, decisions, or any information the user asks you to remember. The memory persists across conversations.",
+        parameters: {
+          type: "object",
+          properties: {
+            content: {
+              type: "string",
+              description:
+                "The memory content to save (markdown format). Will be appended to existing memory.",
+            },
+          },
+          required: ["content"],
+        },
+      },
+    },
+    (input, root) => {
+      const memoryFile = resolve(root, "system_memory.md");
+      const entry = `\n---\n## ${new Date().toISOString()}\n\n${input.content}\n`;
+      if (existsSync(memoryFile)) {
+        appendFileSync(memoryFile, entry, "utf-8");
+      } else {
+        writeFileSync(memoryFile, entry.trim(), "utf-8");
+      }
+      return `Memory saved to system_memory.md`;
+    },
+  ),
 ];
 
 const MAX_ITERATIONS = 250;
@@ -377,8 +422,12 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     `- readFile(path): Read file contents (relative to workspace root)`,
     `- writeFile(path, content): Write content to a file. Creates parent directories automatically.`,
     `- listDir(path): List files and directories (relative to workspace root, default: root)`,
+    `- displayImage(path, alt?): Display an image from the workspace in the chat. Use after writing an image file to show it to the user. Returns a markdown image that renders in the frontend UI.`,
+    `- remember(content): Save important information to your persistent memory file. Use to remember user preferences, project context, or anything the user asks you to keep. Memory persists across conversations.`,
     ``,
     `Always explain what you're doing before using a tool. Be concise.`,
+    ``,
+    `Memory: Use the remember tool whenever you learn something worth keeping — user preferences, project decisions, key context, or when the user explicitly asks you to remember something. Your memory is loaded at the start of every conversation, so anything important should be saved.`,
     conversationId ? `\nConversation ID: ${conversationId}` : "",
     `User attachments for this conversation are saved in: upload/${conversationId}/`,
     workspaceMemory ? `\n## My System Memory:\n\n${workspaceMemory}` : "",
@@ -534,6 +583,33 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     sseWrite(res, "done", {});
   }
 
+  // Persist conversation to workspace
+  if (conversationId) {
+    try {
+      const convDir = resolve(workspaceRoot, "conversation", conversationId);
+      if (!existsSync(convDir)) mkdirSync(convDir, { recursive: true });
+      const convFile = resolve(convDir, "conversation.json");
+      const payload = {
+        conversationId,
+        model,
+        savedAt: new Date().toISOString(),
+        messages: conversation.map((m) => {
+          const msg = m as unknown as Record<string, unknown>;
+          return {
+            role: msg.role,
+            content: msg.content,
+            ...(msg.tool_calls ? { tool_calls: msg.tool_calls } : {}),
+            ...(msg.tool_call_id ? { tool_call_id: msg.tool_call_id } : {}),
+          };
+        }),
+      };
+      writeFileSync(convFile, JSON.stringify(payload, null, 2), "utf-8");
+      console.log(`Conversation saved: ${convFile}`);
+    } catch (e) {
+      console.error("Failed to save conversation:", e);
+    }
+  }
+
   res.end();
 });
 
@@ -542,8 +618,6 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 
 app.use(express.static(path.join(__dirname, "..", "dist")));
-
-// ---------------------------
 
 //
 
@@ -562,8 +636,21 @@ setTimeout(() => {
 // Start
 // ---------------------------------------------------------------------------
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "127.0.0.1", () => {
   console.log(`AI API: ${LLAMA_HOST}`);
   console.log(`Workspace UI: http://localhost:${PORT}`);
   console.log(`Workspace Vite (develoment): http://localhost:5173`);
 });
+
+// ---------------------------------------------------------------------------
+// Static files — web UI
+// ---------------------------------------------------------------------------
+
+let worksapceApp = express();
+worksapceApp.use(cors());
+worksapceApp.use(express.static(DEFAULT_WORKSPACE));
+worksapceApp.listen(8555, "127.0.0.1", () => {
+  console.log(`Workspace Files: http://localhost:${8555}`);
+});
+
+// ---------------------------
