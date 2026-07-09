@@ -4,7 +4,7 @@
 // Runs alongside the macOS app's llama-server process.
 //
 // Start:  npx tsx server.ts [--port PORT]
-// Default port: 8391
+// Default port: 8333
 
 import cors from "cors";
 import express, {
@@ -16,21 +16,18 @@ import path from "path";
 import {
   readFileSync,
   writeFileSync,
-  appendFileSync,
-  readdirSync,
   existsSync,
   mkdirSync,
-  rmSync,
 } from "fs";
-import { resolve, normalize } from "path";
+import { resolve } from "path";
 import { homedir } from "os";
-import OpenAI from "openai";
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { setupProactive } from "./src/proactive";
+import { LLAMA_HOST } from "./src/tools";
+import chatRouter from "./src/routes/chat";
+import createConversationRoutes from "./src/routes/conversations";
 
 const PORT = parseInt(process.env.PORT ?? "", 10) || 8333;
-const LLAMA_HOST = process.env.LLAMA_HOST || "http://localhost:8222";
 
 const app = express();
 
@@ -55,11 +52,10 @@ if (PPID) {
 // ---------------------------------------------------------------------------
 
 app.use(cors());
-
 app.use(express.json({ limit: "4096MB" }));
 
 // ---------------------------------------------------------------------------
-// API — proxy to llama-server
+// Proxy to llama-server
 // ---------------------------------------------------------------------------
 
 const llamaProxy = createProxyMiddleware({
@@ -73,36 +69,11 @@ app.use("/v1", llamaProxy);
 app.use("/models", llamaProxy);
 
 // ---------------------------------------------------------------------------
-// API — status endpoint
-// ---------------------------------------------------------------------------
-
-app.get("/api/status", async (_req: Request, res: Response) => {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-
-    const resp = await fetch(`${LLAMA_HOST}/health`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (resp.ok) {
-      res.json({ status: "ok", llama: true });
-    } else {
-      res.json({ status: "ok", llama: false });
-    }
-  } catch {
-    res.json({ status: "ok", llama: false });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// API — workspace config
+// Config
 // ---------------------------------------------------------------------------
 
 const CONFIG_DIR = resolve(homedir(), "workspace-battery");
 const CONFIG_FILE = resolve(CONFIG_DIR, "config.json");
-
 const DEFAULT_WORKSPACE = resolve(homedir(), "workspace-battery");
 
 function readConfig(): { workspace?: string } {
@@ -122,6 +93,30 @@ function writeConfig(config: { workspace?: string }): void {
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
 }
 
+// ---------------------------------------------------------------------------
+// API — status
+// ---------------------------------------------------------------------------
+
+app.get("/api/status", async (_req: Request, res: Response) => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+
+    const resp = await fetch(`${LLAMA_HOST}/health`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    res.json({ status: "ok", llama: resp.ok });
+  } catch {
+    res.json({ status: "ok", llama: false });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// API — workspace config
+// ---------------------------------------------------------------------------
+
 app.get("/api/config", (_req: Request, res: Response) => {
   res.json(readConfig());
 });
@@ -133,7 +128,7 @@ app.post("/api/config", (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// API — folder picker (native dialog via node-file-dialog)
+// API — folder picker
 // ---------------------------------------------------------------------------
 
 app.post("/api/folder-picker", async (_req: Request, res: Response) => {
@@ -148,7 +143,7 @@ app.post("/api/folder-picker", async (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// API — file upload (saves attachments to workspace)
+// API — file upload
 // ---------------------------------------------------------------------------
 
 app.post("/api/upload", (req: Request, res: Response) => {
@@ -160,11 +155,7 @@ app.post("/api/upload", (req: Request, res: Response) => {
     return;
   }
 
-  const uploadDir = resolve(
-    DEFAULT_WORKSPACE,
-    "conversation",
-    conversationId,
-  );
+  const uploadDir = resolve(DEFAULT_WORKSPACE, "conversation", conversationId);
   if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true });
 
   const filePath = resolve(uploadDir, name);
@@ -178,616 +169,22 @@ app.post("/api/upload", (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-// API — chat with agentic loop (SSE)
+// API — chat (agentic loop with SSE)
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Tool system — unified definition + handler
-// ---------------------------------------------------------------------------
-
-type ToolJson = {
-  type: "function";
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: "object";
-      properties: Record<string, unknown>;
-      required?: string[];
-    };
-  };
-};
-
-interface ToolDef {
-  json: ToolJson;
-  fn: (
-    input: Record<string, unknown>,
-    workspaceRoot: string,
-  ) => string | Promise<string>;
-}
-
-function defineTool(
-  json: ToolJson,
-  fn: (
-    input: Record<string, unknown>,
-    workspaceRoot: string,
-  ) => string | Promise<string>,
-): ToolDef {
-  return { json, fn };
-}
-
-let currentModel = "";
-
-const TOOLS: ToolDef[] = [
-  defineTool(
-    {
-      type: "function",
-      function: {
-        name: "readFile",
-        description:
-          "Read the contents of a file in the workspace. Path is relative to workspace root.",
-        parameters: {
-          type: "object",
-          properties: {
-            path: {
-              type: "string",
-              description: "Relative path from workspace root",
-            },
-          },
-          required: ["path"],
-        },
-      },
-    },
-    (input, root) => {
-      return readFileSync(safeResolve(root, input.path as string), "utf-8");
-    },
-  ),
-  defineTool(
-    {
-      type: "function",
-      function: {
-        name: "writeFile",
-        description:
-          "Write content to a file in the workspace. Creates parent directories if needed.",
-        parameters: {
-          type: "object",
-          properties: {
-            path: {
-              type: "string",
-              description: "Relative path from workspace root",
-            },
-            content: { type: "string", description: "File content to write" },
-          },
-          required: ["path", "content"],
-        },
-      },
-    },
-    (input, root) => {
-      const filePath = safeResolve(root, input.path as string);
-      const dir = path.dirname(filePath);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(filePath, input.content as string, "utf-8");
-      return `File written: ${input.path}`;
-    },
-  ),
-  defineTool(
-    {
-      type: "function",
-      function: {
-        name: "listDir",
-        description:
-          "List files and directories in the workspace. Path is relative to workspace root.",
-        parameters: {
-          type: "object",
-          properties: {
-            path: {
-              type: "string",
-              description:
-                "Relative path from workspace root (default: workspace root)",
-            },
-          },
-          required: [],
-        },
-      },
-    },
-    (input, root) => {
-      const dirPath = safeResolve(root, (input.path as string) || "");
-      const entries = readdirSync(dirPath, { withFileTypes: true });
-      return entries
-        .map((e) => `${e.isDirectory() ? "📁" : "📄"} ${e.name}`)
-        .join("\n");
-    },
-  ),
-  defineTool(
-    {
-      type: "function",
-      function: {
-        name: "displayImage",
-        description:
-          "Display an image from the workspace in the chat. Returns a markdown image tag that renders in the frontend. Use after writing an image file to show it to the user. Path is relative to workspace root.",
-        parameters: {
-          type: "object",
-          properties: {
-            path: {
-              type: "string",
-              description:
-                "Relative path to the image file from workspace root",
-            },
-            alt: {
-              type: "string",
-              description: "Alt text / caption for the image",
-            },
-          },
-          required: ["path"],
-        },
-      },
-    },
-    (input, root) => {
-      const filePath = safeResolve(root, input.path as string);
-      if (!existsSync(filePath)) {
-        return `Error: image not found at ${input.path}`;
-      }
-      const alt = (input.alt as string) || (input.path as string);
-      return `![${alt}](http://localhost:8555/${input.path})`;
-    },
-  ),
-  defineTool(
-    {
-      type: "function",
-      function: {
-        name: "saveMemory",
-        description:
-          "Save important information to your persistent memory file. Use this to remember user preferences, project context, decisions, or any information the user asks you to remember. The memory persists across conversations.",
-        parameters: {
-          type: "object",
-          properties: {
-            content: {
-              type: "string",
-              description:
-                "The memory content to save (markdown format). Will be appended to existing memory.",
-            },
-          },
-          required: ["content"],
-        },
-      },
-    },
-    (input, root) => {
-      const memoryFile = resolve(root, "system_memory.md");
-      const entry = `\n---\n## ${new Date().toISOString()}\n\n${input.content}\n`;
-      if (existsSync(memoryFile)) {
-        appendFileSync(memoryFile, entry, "utf-8");
-      } else {
-        writeFileSync(memoryFile, entry.trim(), "utf-8");
-      }
-      return `Memory saved to system_memory.md`;
-    },
-  ),
-  defineTool(
-    {
-      type: "function",
-      function: {
-        name: "readImage",
-        description:
-          "Read and describe an image file from the workspace using AI vision. Returns a textual description of what's in the image. Use this to understand images the user has uploaded or that exist in the workspace. Path is relative to workspace root.",
-        parameters: {
-          type: "object",
-          properties: {
-            path: {
-              type: "string",
-              description: "Relative path to the image file from workspace root",
-            },
-          },
-          required: ["path"],
-        },
-      },
-    },
-    async (input, root) => {
-      const filePath = safeResolve(root, input.path as string);
-      if (!existsSync(filePath)) {
-        return `Error: image not found at ${input.path}`;
-      }
-      const buffer = readFileSync(filePath);
-      const ext = (input.path as string).split(".").pop()?.toLowerCase() ?? "";
-      const mimeMap: Record<string, string> = {
-        png: "image/png",
-        jpg: "image/jpeg",
-        jpeg: "image/jpeg",
-        gif: "image/gif",
-        webp: "image/webp",
-        svg: "image/svg+xml",
-        bmp: "image/bmp",
-      };
-      const mime = mimeMap[ext] ?? "image/png";
-      const dataUrl = `data:${mime};base64,${buffer.toString("base64")}`;
-
-      const visionClient = new OpenAI({
-        baseURL: `${LLAMA_HOST}/v1`,
-        apiKey: "none",
-      });
-
-      const resp = await visionClient.chat.completions.create({
-        model: currentModel,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Describe this image in detail. What do you see?",
-              },
-              { type: "image_url", image_url: { url: dataUrl } },
-            ],
-          },
-        ],
-        max_tokens: 1024,
-      });
-
-      return (
-        resp.choices[0]?.message?.content ?? "No description available."
-      );
-    },
-  ),
-];
-
-const MAX_ITERATIONS = 250;
-
-function safeResolve(workspaceRoot: string, relativePath: string): string {
-  const resolved = resolve(workspaceRoot, normalize(relativePath));
-  if (
-    !resolved.startsWith(workspaceRoot + path.sep) &&
-    resolved !== workspaceRoot
-  ) {
-    throw new Error(`Path traversal denied: ${relativePath}`);
-  }
-  return resolved;
-}
-
-function sseWrite(res: Response, event: string, data: Record<string, unknown>) {
-  res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-}
-
-app.post("/api/chat", async (req: Request, res: Response) => {
-  const { messages, model, conversationId } = req.body;
-  currentModel = model ?? "";
-  // workspace: userInputworkspace
-
-  const workspace = DEFAULT_WORKSPACE;
-
-  if (!messages || !model || !workspace) {
-    res
-      .status(400)
-      .json({ error: "messages, model, and workspace are required" });
-    return;
-  }
-
-  const workspaceRoot = workspace;
-
-  if (!existsSync(workspaceRoot)) {
-    mkdirSync(workspaceRoot, { recursive: true });
-  }
-
-  console.log(workspaceRoot);
-  if (!existsSync(workspaceRoot)) {
-    res.status(400).json({ error: `Workspace not found: ${workspaceRoot}` });
-    return;
-  }
-
-  // Load workspace memory file if present
-  let workspaceMemory = "";
-  const memoryFile = resolve(workspaceRoot, "system_memory.md");
-  if (existsSync(memoryFile)) {
-    try {
-      workspaceMemory = readFileSync(memoryFile, "utf-8").trim();
-      console.log(`Loaded workspace memory: ${memoryFile}`);
-    } catch {
-      // ignore unreadable memory files
-    }
-  }
-
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-  res.flushHeaders();
-
-  const client = new OpenAI({ baseURL: `${LLAMA_HOST}/v1`, apiKey: "none" });
-
-  const systemPrompt = [
-    `You are a workspace AI assistant with access to the workspace at: ${workspaceRoot}`,
-    `Today is: ${new Date().toISOString()}`,
-    `Conversation ID is: ${conversationId}`,
-    ``,
-    `You have the following tools:`,
-    `- readFile(path): Read file contents (relative to workspace root)`,
-    `- writeFile(path, content): Write content to a file. Creates parent directories automatically.`,
-    `- listDir(path): List files and directories (relative to workspace root, default: root)`,
-    `- displayImage(path, alt?): Display an image from the workspace in the chat. Use after writing an image file to show it to the user. Returns a markdown image that renders in the frontend UI.`,
-    `- saveMemory(content): Save important information to your persistent memory file. Use to remember user preferences, project context, or anything the user asks you to keep. Memory persists across conversations.`,
-    ``,
-    `Always explain what you're doing before using a tool. Be concise.`,
-    ``,
-    `Memory: Use the saveMemory tool whenever you learn something worth keeping — user preferences, project decisions, key context, or when the user explicitly asks you to remember something. Your memory is loaded at the start of every conversation, so anything important should be saved. If you don't yet know the user's name, ask for it and remember it.`,
-    conversationId ? `\nConversation ID: ${conversationId}` : "",
-    `User attachments for this conversation are saved in: conversation/${conversationId}/`,
-    workspaceMemory ? `\n## My System Memory:\n\n${workspaceMemory}` : "",
-    `
-    Always listDir of the workspace and see all the files and sub-folders and its files recursively.
-    `,
-  ]
-    .join("\n")
-    .trim();
-
-  const conversation: ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    ...messages.map((m: { role: string; content: unknown }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content as string,
-    })),
-  ];
-
-  //
-
-  try {
-    let naturalStop = false;
-    for (let i = 0; i < MAX_ITERATIONS; i++) {
-      const stream = await client.chat.completions.create({
-        model,
-        messages: conversation,
-        tools: TOOLS.map((t) => t.json),
-        stream: true,
-        reasoning_effort: "high",
-      });
-
-      let content = "";
-      const toolCallMap = new Map<
-        number,
-        { id: string; name: string; arguments: string }
-      >();
-
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta;
-
-        // llama.cpp reasoning/thinking tokens (extension field)
-        const reasoning = (delta as Record<string, unknown>)
-          .reasoning_content as string | undefined;
-        if (reasoning) {
-          sseWrite(res, "think", { delta: reasoning });
-        }
-
-        if (delta?.content) {
-          content += delta.content;
-          sseWrite(res, "content", { delta: delta.content });
-        }
-
-        if (delta?.tool_calls) {
-          for (const tc of delta.tool_calls) {
-            const idx = tc.index;
-            if (!toolCallMap.has(idx)) {
-              toolCallMap.set(idx, {
-                id: tc.id ?? "",
-                name: tc.function?.name ?? "",
-                arguments: tc.function?.arguments ?? "",
-              });
-            } else {
-              const existing = toolCallMap.get(idx)!;
-              if (tc.id) existing.id = tc.id;
-              if (tc.function?.name) existing.name += tc.function.name;
-              if (tc.function?.arguments)
-                existing.arguments += tc.function.arguments;
-            }
-          }
-        }
-      }
-
-      const toolCalls = [...toolCallMap.values()].sort(
-        (a, b) =>
-          [...toolCallMap.keys()].indexOf(
-            [...toolCallMap.keys()].find((k) => toolCallMap.get(k) === a) ?? 0,
-          ) -
-          [...toolCallMap.keys()].indexOf(
-            [...toolCallMap.keys()].find((k) => toolCallMap.get(k) === b) ?? 0,
-          ),
-      );
-
-      // Add assistant message to conversation
-      const assistantMsg: ChatCompletionMessageParam = {
-        role: "assistant",
-        content: content || null,
-      };
-
-      if (toolCalls.length > 0) {
-        assistantMsg.tool_calls = toolCalls.map((tc) => ({
-          id: tc.id,
-          type: "function" as const,
-          function: { name: tc.name, arguments: tc.arguments },
-        }));
-      }
-
-      conversation.push(assistantMsg);
-
-      // If no tool calls, we're done
-      if (toolCalls.length === 0) {
-        sseWrite(res, "done", {});
-        naturalStop = true;
-        break;
-      }
-
-      // Execute tool calls
-      for (const tc of toolCalls) {
-        let input: Record<string, unknown> = {};
-        try {
-          input = JSON.parse(tc.arguments);
-        } catch {
-          // empty args
-        }
-
-        sseWrite(res, "tool_start", {
-          id: tc.id,
-          name: tc.name,
-          input,
-        });
-
-        const tool = TOOLS.find((t) => t.json.function.name === tc.name);
-        let output: string;
-        try {
-          output = tool
-            ? await tool.fn(input, workspaceRoot)
-            : `Unknown tool: ${tc.name}`;
-        } catch (err) {
-          output = `Error: ${err instanceof Error ? err.message : String(err)}`;
-        }
-
-        sseWrite(res, "tool_result", {
-          id: tc.id,
-          name: tc.name,
-          output,
-        });
-
-        conversation.push({
-          role: "tool",
-          tool_call_id: tc.id,
-          content: output,
-        });
-      }
-    }
-
-    // If we hit max iterations without a natural stop
-    if (!naturalStop) {
-      sseWrite(res, "done", {});
-    }
-  } catch (err) {
-    sseWrite(res, "error", {
-      message: err instanceof Error ? err.message : String(err),
-    });
-    sseWrite(res, "done", {});
-  }
-
-  // Persist conversation to workspace
-  if (conversationId) {
-    try {
-      const convDir = resolve(workspaceRoot, "conversation", conversationId);
-      if (!existsSync(convDir)) mkdirSync(convDir, { recursive: true });
-      const convFile = resolve(convDir, "conversation.json");
-      const payload = {
-        conversationId,
-        model,
-        savedAt: new Date().toISOString(),
-        messages: conversation.map((m) => {
-          const msg = m as unknown as Record<string, unknown>;
-          return {
-            role: msg.role,
-            content: msg.content,
-            ...(msg.tool_calls ? { tool_calls: msg.tool_calls } : {}),
-            ...(msg.tool_call_id ? { tool_call_id: msg.tool_call_id } : {}),
-          };
-        }),
-      };
-      writeFileSync(convFile, JSON.stringify(payload, null, 2), "utf-8");
-      console.log(`Conversation saved: ${convFile}`);
-    } catch (e) {
-      console.error("Failed to save conversation:", e);
-    }
-  }
-
-  res.end();
-});
+app.use("/api", chatRouter);
 
 // ---------------------------------------------------------------------------
-// API — conversation listing & loading
+// API — conversations CRUD
 // ---------------------------------------------------------------------------
 
-function extractPreview(content: unknown): string {
-  if (typeof content === "string") return content.slice(0, 80);
-  if (Array.isArray(content)) {
-    const textParts = content
-      .filter((p) => p?.type === "text")
-      .map((p) => (p as { text: string }).text ?? "")
-      .join(" ");
-    return textParts.slice(0, 80);
-  }
-  return "";
-}
-
-app.get("/api/conversations", (_req: Request, res: Response) => {
-  try {
-    const convRoot = resolve(DEFAULT_WORKSPACE, "conversation");
-    if (!existsSync(convRoot)) {
-      res.json([]);
-      return;
-    }
-    const entries = readdirSync(convRoot, { withFileTypes: true });
-    const conversations = entries
-      .filter((e) => e.isDirectory())
-      .map((e) => {
-        const file = resolve(convRoot, e.name, "conversation.json");
-        try {
-          const raw = readFileSync(file, "utf-8");
-          const data = JSON.parse(raw);
-          const userMsg = data.messages?.find(
-            (m: { role: string }) => m.role === "user",
-          );
-          return {
-            id: e.name,
-            savedAt: data.savedAt ?? "",
-            model: data.model ?? "",
-            preview: extractPreview(userMsg?.content),
-          };
-        } catch {
-          return { id: e.name, savedAt: "", model: "", preview: "" };
-        }
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
-      );
-    res.json(conversations);
-  } catch {
-    res.json([]);
-  }
-});
-
-app.get("/api/conversations/:id", (req: Request, res: Response) => {
-  try {
-    const convId = req.params.id as string;
-    const file = resolve(
-      DEFAULT_WORKSPACE,
-      "conversation",
-      convId,
-      "conversation.json",
-    );
-    if (!existsSync(file)) {
-      res.status(404).json({ error: "Conversation not found" });
-      return;
-    }
-    const raw = readFileSync(file, "utf-8");
-    res.json(JSON.parse(raw));
-  } catch {
-    res.status(500).json({ error: "Failed to load conversation" });
-  }
-});
-
-app.delete("/api/conversations/:id", (req: Request, res: Response) => {
-  try {
-    const convId = req.params.id as string;
-    const convDir = resolve(DEFAULT_WORKSPACE, "conversation", convId);
-    if (!existsSync(convDir)) {
-      res.status(404).json({ error: "Conversation not found" });
-      return;
-    }
-    rmSync(convDir, { recursive: true });
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: "Failed to delete conversation" });
-  }
-});
+app.use("/api/conversations", createConversationRoutes(DEFAULT_WORKSPACE));
 
 // ---------------------------------------------------------------------------
 // Static files — web UI
 // ---------------------------------------------------------------------------
 
 app.use(express.static(path.join(__dirname, "..", "dist")));
-
-//
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.path.startsWith("/api/") || req.path.startsWith("/v1/")) {
@@ -811,14 +208,12 @@ app.listen(PORT, "127.0.0.1", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Static files — web UI
+// Workspace file server
 // ---------------------------------------------------------------------------
 
-let worksapceApp = express();
-worksapceApp.use(cors());
-worksapceApp.use(express.static(DEFAULT_WORKSPACE));
-worksapceApp.listen(8555, "127.0.0.1", () => {
-  console.log(`Workspace Files: http://localhost:${8555}`);
+const workspaceApp = express();
+workspaceApp.use(cors());
+workspaceApp.use(express.static(DEFAULT_WORKSPACE));
+workspaceApp.listen(8555, "127.0.0.1", () => {
+  console.log(`Workspace Files: http://localhost:8555`);
 });
-
-// ---------------------------
