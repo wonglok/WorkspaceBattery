@@ -1,4 +1,10 @@
-import type { ChatRequest, SSEEvent, WorkspaceConfig } from "./types";
+import type {
+  ChatRequest,
+  ConversationSummary,
+  SavedConversation,
+  SSEEvent,
+  WorkspaceConfig,
+} from "./types";
 
 export const BASE_URL = "http://localhost:8333";
 
@@ -37,6 +43,27 @@ export async function saveConfig(config: WorkspaceConfig): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(config),
   });
+}
+
+export async function listConversations(): Promise<ConversationSummary[]> {
+  const res = await fetch(`${BASE}/api/conversations`);
+  if (!res.ok) return [];
+  return res.json() as Promise<ConversationSummary[]>;
+}
+
+export async function loadConversation(
+  id: string,
+): Promise<SavedConversation | null> {
+  const res = await fetch(`${BASE}/api/conversations/${id}`);
+  if (!res.ok) return null;
+  return res.json() as Promise<SavedConversation>;
+}
+
+export async function deleteConversation(id: string): Promise<boolean> {
+  const res = await fetch(`${BASE}/api/conversations/${id}`, {
+    method: "DELETE",
+  });
+  return res.ok;
 }
 
 export async function startChatStream(

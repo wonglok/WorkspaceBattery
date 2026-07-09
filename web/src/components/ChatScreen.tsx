@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useChat } from "../hooks/useChat";
 import { ChatInput } from "./ChatInput";
+import { Sidebar } from "./Sidebar";
 
 interface Props {
   workspacePath: string;
@@ -19,15 +20,29 @@ export function ChatScreen({ workspacePath }: Props) {
     sendMessage,
     stopGeneration,
     clearMessages,
+    loadChat,
     conversationId,
+    sidebarRefresh,
+    setSidebarRefresh,
     setHovering,
   } = useChat(workspacePath);
 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const wasStreaming = useRef(isStreaming);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Refresh sidebar when a conversation finishes
+  useEffect(() => {
+    if (wasStreaming.current && !isStreaming && messages.length > 0) {
+      setSidebarRefresh((n) => n + 1);
+    }
+    wasStreaming.current = isStreaming;
+  }, [isStreaming, messages.length, setSidebarRefresh]);
 
   const displayPath =
     workspacePath.length > 40
@@ -41,10 +56,11 @@ export function ChatScreen({ workspacePath }: Props) {
 
   return (
     <div
-      className="relative flex h-screen flex-col overflow-hidden"
+      className="relative flex h-screen flex-col overflow-hidden transition-[padding-left] duration-300"
       style={{
         background:
           "linear-gradient(170deg, #faf7f2 0%, #f6efe5 15%, #f2e8e0 30%, #eef0f5 50%, #f0e8e2 65%, #f5eee5 80%, #faf6f0 100%)",
+        paddingLeft: sidebarOpen ? "16rem" : "0",
       }}
     >
       {/* Cloud wisps */}
@@ -53,10 +69,30 @@ export function ChatScreen({ workspacePath }: Props) {
       <div className="cloud-wisp cloud-wisp-3" />
       <div className="cloud-wisp cloud-wisp-4" />
 
+      {/* Sidebar */}
+      <Sidebar
+        activeId={conversationId}
+        onSelect={loadChat}
+        onNew={() => {
+          clearMessages();
+          setSidebarRefresh((n) => n + 1);
+        }}
+        onRefresh={sidebarRefresh}
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen((o) => !o)}
+      />
+
       {/* Header */}
       <header className="glass-strong filigree-border relative z-10 flex items-center justify-between px-5 py-3">
         <div className="header-path-mono">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="header-path-icon">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="header-path-icon"
+          >
             <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2l-2-2H9L7 5H5a2 2 0 0 0-2 2Z" />
             <path d="M12 12v5" strokeWidth="1" />
             <path d="M9.5 14.5 12 12l2.5 2.5" strokeWidth="1" />
@@ -144,7 +180,6 @@ export function ChatScreen({ workspacePath }: Props) {
               <div className="editorial-rule" />
               <p className="editorial-sub">with your workspace</p>
             </div>
-
           </div>
         ) : (
           <div className="mx-auto max-w-3xl space-y-5">
@@ -294,11 +329,12 @@ export function ChatScreen({ workspacePath }: Props) {
                             {tc.status === "error" && (
                               <span className="ml-2 text-rose-400">error</span>
                             )}
-                            {tc.output && tc.name === "displayImage" && tc.status === "done" ? (
+                            {tc.output &&
+                            tc.name === "displayImage" &&
+                            tc.status === "done" ? (
                               (() => {
-                                const m = tc.output.match(
-                                  /^!\[(.*)\]\((.*)\)$/,
-                                );
+                                const m =
+                                  tc.output.match(/^!\[(.*)\]\((.*)\)$/);
                                 if (m) {
                                   return (
                                     <img

@@ -79,3 +79,22 @@ export interface DisplayToolCall {
   output?: string;
   status: "running" | "done" | "error";
 }
+
+export interface ConversationSummary {
+  id: string;
+  savedAt: string;
+  model: string;
+  preview: string;
+}
+
+export interface SavedConversation {
+  conversationId: string;
+  model: string;
+  savedAt: string;
+  messages: {
+    role: string;
+    content: string;
+    tool_calls?: ToolCall[];
+    tool_call_id?: string;
+  }[];
+}

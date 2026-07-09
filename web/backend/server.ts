@@ -20,6 +20,7 @@ import {
   readdirSync,
   existsSync,
   mkdirSync,
+  rmSync,
 } from "fs";
 import { resolve, normalize } from "path";
 import { homedir } from "os";
@@ -159,7 +160,11 @@ app.post("/api/upload", (req: Request, res: Response) => {
     return;
   }
 
-  const uploadDir = resolve(DEFAULT_WORKSPACE, "upload", conversationId);
+  const uploadDir = resolve(
+    DEFAULT_WORKSPACE,
+    "conversation",
+    conversationId,
+  );
   if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true });
 
   const filePath = resolve(uploadDir, name);
@@ -168,7 +173,7 @@ app.post("/api/upload", (req: Request, res: Response) => {
 
   res.json({
     path: filePath,
-    relativePath: `upload/${conversationId}/${name}`,
+    relativePath: `conversation/${conversationId}/${name}`,
   });
 });
 
@@ -429,7 +434,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     ``,
     `Memory: Use the saveMemory tool whenever you learn something worth keeping — user preferences, project decisions, key context, or when the user explicitly asks you to remember something. Your memory is loaded at the start of every conversation, so anything important should be saved. If you don't yet know the user's name, ask for it and remember it.`,
     conversationId ? `\nConversation ID: ${conversationId}` : "",
-    `User attachments for this conversation are saved in: upload/${conversationId}/`,
+    `User attachments for this conversation are saved in: conversation/${conversationId}/`,
     workspaceMemory ? `\n## My System Memory:\n\n${workspaceMemory}` : "",
     `
     Always listDir of the workspace and see all the files and sub-folders and its files recursively.
@@ -611,6 +616,95 @@ app.post("/api/chat", async (req: Request, res: Response) => {
   }
 
   res.end();
+});
+
+// ---------------------------------------------------------------------------
+// API — conversation listing & loading
+// ---------------------------------------------------------------------------
+
+function extractPreview(content: unknown): string {
+  if (typeof content === "string") return content.slice(0, 80);
+  if (Array.isArray(content)) {
+    const textParts = content
+      .filter((p) => p?.type === "text")
+      .map((p) => (p as { text: string }).text ?? "")
+      .join(" ");
+    return textParts.slice(0, 80);
+  }
+  return "";
+}
+
+app.get("/api/conversations", (_req: Request, res: Response) => {
+  try {
+    const convRoot = resolve(DEFAULT_WORKSPACE, "conversation");
+    if (!existsSync(convRoot)) {
+      res.json([]);
+      return;
+    }
+    const entries = readdirSync(convRoot, { withFileTypes: true });
+    const conversations = entries
+      .filter((e) => e.isDirectory())
+      .map((e) => {
+        const file = resolve(convRoot, e.name, "conversation.json");
+        try {
+          const raw = readFileSync(file, "utf-8");
+          const data = JSON.parse(raw);
+          const userMsg = data.messages?.find(
+            (m: { role: string }) => m.role === "user",
+          );
+          return {
+            id: e.name,
+            savedAt: data.savedAt ?? "",
+            model: data.model ?? "",
+            preview: extractPreview(userMsg?.content),
+          };
+        } catch {
+          return { id: e.name, savedAt: "", model: "", preview: "" };
+        }
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
+      );
+    res.json(conversations);
+  } catch {
+    res.json([]);
+  }
+});
+
+app.get("/api/conversations/:id", (req: Request, res: Response) => {
+  try {
+    const convId = req.params.id as string;
+    const file = resolve(
+      DEFAULT_WORKSPACE,
+      "conversation",
+      convId,
+      "conversation.json",
+    );
+    if (!existsSync(file)) {
+      res.status(404).json({ error: "Conversation not found" });
+      return;
+    }
+    const raw = readFileSync(file, "utf-8");
+    res.json(JSON.parse(raw));
+  } catch {
+    res.status(500).json({ error: "Failed to load conversation" });
+  }
+});
+
+app.delete("/api/conversations/:id", (req: Request, res: Response) => {
+  try {
+    const convId = req.params.id as string;
+    const convDir = resolve(DEFAULT_WORKSPACE, "conversation", convId);
+    if (!existsSync(convDir)) {
+      res.status(404).json({ error: "Conversation not found" });
+      return;
+    }
+    rmSync(convDir, { recursive: true });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Failed to delete conversation" });
+  }
 });
 
 // ---------------------------------------------------------------------------

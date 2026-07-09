@@ -1,6 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { startChatStream } from "../api";
-import type { ContentPart, DisplayMessage, SSEEvent } from "../types";
+import { loadConversation, startChatStream } from "../api";
+import type {
+  ContentPart,
+  DisplayMessage,
+  DisplayToolCall,
+  SSEEvent,
+} from "../types";
 import { BASE_URL } from "../api";
 
 export function useChat(workspacePath: string) {
@@ -9,7 +14,10 @@ export function useChat(workspacePath: string) {
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
-  const [conversationId, setConversationId] = useState(crypto.randomUUID());
+  const [conversationId, setConversationId] = useState(
+    `${crypto.randomUUID()}`,
+  );
+  const [sidebarRefresh, setSidebarRefresh] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -206,6 +214,57 @@ export function useChat(workspacePath: string) {
     setConversationId(crypto.randomUUID());
   }, []);
 
+  const loadChat = useCallback(
+    async (id: string) => {
+      if (isStreaming) return;
+      const data = await loadConversation(id);
+      if (!data) return;
+      const loaded: DisplayMessage[] = [];
+      for (const m of data.messages) {
+        if (m.role === "system") continue;
+        const toolCalls: DisplayToolCall[] | undefined = m.tool_calls?.map(
+          (tc) => ({
+            id: tc.id,
+            name: tc.function.name,
+            input: (() => {
+              try {
+                return JSON.parse(tc.function.arguments);
+              } catch {
+                return {};
+              }
+            })(),
+            status: "done" as const,
+          }),
+        );
+        let content: string;
+        let parts: ContentPart[] | undefined;
+        if (typeof m.content === "string") {
+          content = m.content;
+        } else if (Array.isArray(m.content)) {
+          parts = m.content as ContentPart[];
+          content = parts
+            .filter((p) => p.type === "text")
+            .map((p) => (p as { text: string }).text)
+            .join(" ");
+        } else {
+          content = "";
+        }
+        loaded.push({
+          id: crypto.randomUUID(),
+          role: m.role as "user" | "assistant",
+          content,
+          parts,
+          isStreaming: false,
+          toolCalls,
+        });
+      }
+      setMessages(loaded);
+      setConversationId(`${id}`);
+      setError(null);
+    },
+    [isStreaming],
+  );
+
   return {
     setHovering,
     messages,
@@ -217,6 +276,9 @@ export function useChat(workspacePath: string) {
     sendMessage,
     stopGeneration,
     clearMessages,
+    loadChat,
     conversationId,
+    sidebarRefresh,
+    setSidebarRefresh,
   };
 }
