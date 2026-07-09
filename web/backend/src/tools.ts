@@ -1,3 +1,4 @@
+import { execSync } from "child_process";
 import OpenAI from "openai";
 import path from "path";
 import {

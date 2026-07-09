@@ -57,7 +57,7 @@ router.post("/chat", async (req: Request, res: Response) => {
     `You have the following tools:`,
     `- readFile(path): Read file contents (relative to workspace root)`,
     `- writeFile(path, content): Write content to a file. Creates parent directories automatically.`,
-    `- listDir(path): List files and directories (relative to workspace root, default: root)`,
+    `- listDir(path): List files and directories (relative to workspace root, default: "." which is workspace root)`,
     `- displayImage(path, alt?): Display an image from the workspace in the chat. Use after writing an image file to show it to the user. Returns a markdown image that renders in the frontend UI.`,
     `- saveMemory(content): Save important information to your persistent memory file. Use to remember user preferences, project context, or anything the user asks you to keep. Memory persists across conversations.`,
     `- readImage(path): Read and describe an image file from the workspace using AI vision. Returns a textual description of what's in the image.`,

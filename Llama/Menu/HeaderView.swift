@@ -147,7 +147,7 @@ final class HeaderView: ItemView {
 
 
   @objc private func openWorkspaceClicked() {
-    openInBrowser(URL(string: "http://localhost:8333/")!)
+    WorkspaceWebViewController.shared.show()
   }
 
   @objc private func copyUrl() {
