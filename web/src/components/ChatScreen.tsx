@@ -101,7 +101,6 @@ export function ChatScreen({ workspacePath }: Props) {
             {displayPath}
           </span>
         </div>
-
       </header>
 
       {/* Messages */}
@@ -325,17 +324,17 @@ export function ChatScreen({ workspacePath }: Props) {
                             tc.name === "displayImage" &&
                             tc.status === "done" ? (
                               (() => {
-                                const m =
-                                  tc.output.match(/^!\[(.*)\]\((.*)\)$/);
-                                if (m) {
-                                  return (
-                                    <img
-                                      src={m[2]}
-                                      alt={m[1]}
-                                      className="mt-1 max-h-64 max-w-full rounded-xl object-contain"
-                                    />
-                                  );
-                                }
+                                // const m =
+                                //   tc.output.match(/^!\[(.*)\]\((.*)\)$/);
+                                // if (m) {
+                                //   return (
+                                //     <img
+                                //       src={m[2]}
+                                //       alt={m[1]}
+                                //       className="mt-1 max-h-64 max-w-full rounded-xl object-contain"
+                                //     />
+                                //   );
+                                // }
 
                                 return (
                                   <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap font-body text-[10px] leading-relaxed text-ink-faint/50">
