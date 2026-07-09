@@ -171,6 +171,23 @@ export function useChat(workspacePath: string) {
                   return msgs;
                 });
                 break;
+              case "image":
+                setMessages((current) => {
+                  const msgs = [...current];
+                  const last = msgs[msgs.length - 1];
+                  if (last && last.role === "assistant") {
+                    msgs[msgs.length - 1] = {
+                      ...last,
+                      images: [
+                        ...(last.images ?? []),
+                        { alt: event.alt, url: event.url },
+                      ],
+                      isStreaming: true,
+                    };
+                  }
+                  return msgs;
+                });
+                break;
               case "done":
                 setMessages((current) => {
                   const msgs = [...current];

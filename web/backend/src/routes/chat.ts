@@ -185,6 +185,14 @@ router.post("/chat", async (req: Request, res: Response) => {
 
         sseWrite(res, "tool_result", { id: tc.id, name: tc.name, output });
 
+        // If displayImage succeeded, emit an image event for inline rendering
+        if (tc.name === "displayImage" && !output.startsWith("Error")) {
+          const m = output.match(/^!\[(.*)\]\((.*)\)$/);
+          if (m) {
+            sseWrite(res, "image", { alt: m[1], url: m[2] });
+          }
+        }
+
         conversation.push({
           role: "tool",
           tool_call_id: tc.id,

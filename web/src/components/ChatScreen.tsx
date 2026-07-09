@@ -273,6 +273,20 @@ export function ChatScreen({ workspacePath }: Props) {
                         return null;
                       })}
 
+                    {/* Inline images from displayImage tool */}
+                    {msg.images && msg.images.length > 0 && (
+                      <div className="mb-2 space-y-2">
+                        {msg.images.map((img, i) => (
+                          <img
+                            key={i}
+                            src={img.url}
+                            alt={img.alt}
+                            className="max-h-64 max-w-full rounded-xl object-contain"
+                          />
+                        ))}
+                      </div>
+                    )}
+
                     {/* Text content */}
                     {msg.content && !isUser && (
                       <div className="prose max-w-none font-body text-base leading-relaxed text-ink prose-headings:font-display prose-headings:text-ink prose-headings:font-medium prose-a:text-gold prose-a:no-underline hover:prose-a:underline prose-code:font-mono prose-code:text-xs prose-code:bg-white/40 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-ink-soft prose-pre:bg-white/30 prose-pre:backdrop-blur-sm prose-pre:rounded-xl prose-pre:text-sm prose-strong:text-ink prose-em:italic prose-em:text-ink-soft prose-li:marker:text-gold/40">

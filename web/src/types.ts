@@ -39,6 +39,7 @@ export type SSEEvent =
       input: Record<string, unknown>;
     }
   | { type: "tool_result"; id: string; name: string; output: string }
+  | { type: "image"; alt: string; url: string }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -69,6 +70,7 @@ export interface DisplayMessage {
   parts?: ContentPart[];
   thinking?: string;
   toolCalls?: DisplayToolCall[];
+  images?: { alt: string; url: string }[];
   isStreaming: boolean;
 }
 
