@@ -200,12 +200,18 @@ type ToolJson = {
 
 interface ToolDef {
   json: ToolJson;
-  fn: (input: Record<string, unknown>, workspaceRoot: string) => string;
+  fn: (
+    input: Record<string, unknown>,
+    workspaceRoot: string,
+  ) => string | Promise<string>;
 }
 
 function defineTool(
   json: ToolJson,
-  fn: (input: Record<string, unknown>, workspaceRoot: string) => string,
+  fn: (
+    input: Record<string, unknown>,
+    workspaceRoot: string,
+  ) => string | Promise<string>,
 ): ToolDef {
   return { json, fn };
 }
@@ -352,6 +358,71 @@ const TOOLS: ToolDef[] = [
         writeFileSync(memoryFile, entry.trim(), "utf-8");
       }
       return `Memory saved to system_memory.md`;
+    },
+  ),
+  defineTool(
+    {
+      type: "function",
+      function: {
+        name: "readImage",
+        description:
+          "Read and describe an image file from the workspace using AI vision. Returns a textual description of what's in the image. Use this to understand images the user has uploaded or that exist in the workspace. Path is relative to workspace root.",
+        parameters: {
+          type: "object",
+          properties: {
+            path: {
+              type: "string",
+              description: "Relative path to the image file from workspace root",
+            },
+          },
+          required: ["path"],
+        },
+      },
+    },
+    async (input, root) => {
+      const filePath = safeResolve(root, input.path as string);
+      if (!existsSync(filePath)) {
+        return `Error: image not found at ${input.path}`;
+      }
+      const buffer = readFileSync(filePath);
+      const ext = (input.path as string).split(".").pop()?.toLowerCase() ?? "";
+      const mimeMap: Record<string, string> = {
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        gif: "image/gif",
+        webp: "image/webp",
+        svg: "image/svg+xml",
+        bmp: "image/bmp",
+      };
+      const mime = mimeMap[ext] ?? "image/png";
+      const dataUrl = `data:${mime};base64,${buffer.toString("base64")}`;
+
+      const visionClient = new OpenAI({
+        baseURL: `${LLAMA_HOST}/v1`,
+        apiKey: "none",
+      });
+
+      const resp = await visionClient.chat.completions.create({
+        model: selectedModelGlobal ?? "",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Describe this image in detail. What do you see?",
+              },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+        max_tokens: 1024,
+      });
+
+      return (
+        resp.choices[0]?.message?.content ?? "No description available."
+      );
     },
   ),
 ];
@@ -557,7 +628,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
         let output: string;
         try {
           output = tool
-            ? tool.fn(input, workspaceRoot)
+            ? await tool.fn(input, workspaceRoot)
             : `Unknown tool: ${tc.name}`;
         } catch (err) {
           output = `Error: ${err instanceof Error ? err.message : String(err)}`;
