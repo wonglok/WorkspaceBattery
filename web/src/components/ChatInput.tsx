@@ -317,7 +317,7 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder="Compose your message..."
           rows={1}
-          className="flex-1 resize-none rounded-2xl border border-gold/10 bg-white/40 px-4 py-2.5 font-body text-[15px] text-ink placeholder:text-ink-faint/35 outline-none backdrop-blur-sm transition-all duration-300 focus:border-gold/25 focus:bg-white/60 focus:shadow-[0_0_24px_rgba(200,168,78,0.06)]"
+          className={`flex-1 resize-none rounded-2xl border border-gold/10 bg-white/40 px-4 py-2.5 font-body text-[15px] text-ink placeholder:text-ink-faint/35 outline-none backdrop-blur-sm transition-all duration-300 focus:border-gold/25 focus:bg-white/60 focus:shadow-[0_0_24px_rgba(200,168,78,0.06)] ${isStreaming ? "input-processing" : ""}`}
         />
 
         {/* Image attach */}

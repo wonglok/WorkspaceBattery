@@ -22,9 +22,11 @@ hr {
   --color-gold: #c8a84e;
   --color-gold-light: #e4d5a7;
   --color-gold-pale: #f0e8cc;
-  --color-sky: #d4dbe8;
+  ---color-sky: #d4dbe8;
   --color-sky-soft: #e8ecf4;
   --color-sky-wash: #dfe6f2;
+  --color-sky-bright: #b8d4f0;
+  --color-sky-glow: #a0c8f0;
   --color-cloud: #f4f1f0;
   --color-ink: #3d3530;
   --color-ink-soft: #6b5e58;
@@ -325,6 +327,63 @@ body::before {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: goldShimmer 4s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* Sky Blue Processing Pulse                                           */
+/* ------------------------------------------------------------------ */
+
+@keyframes skyBluePulse {
+  0%,
+  100% {
+    border-color: rgba(160, 200, 240, 0.3);
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 16px rgba(160, 200, 240, 0.08);
+  }
+  25% {
+    border-color: rgba(140, 195, 245, 0.5);
+    background: rgba(220, 235, 250, 0.45);
+    box-shadow: 0 0 28px rgba(140, 195, 245, 0.15);
+  }
+  50% {
+    border-color: rgba(120, 185, 245, 0.6);
+    background: rgba(210, 228, 248, 0.5);
+    box-shadow: 0 0 36px rgba(130, 190, 245, 0.2);
+  }
+  75% {
+    border-color: rgba(150, 200, 245, 0.45);
+    background: rgba(225, 238, 250, 0.4);
+    box-shadow: 0 0 22px rgba(150, 200, 245, 0.12);
+  }
+}
+
+@keyframes skyBlueGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.input-processing {
+  animation: skyBluePulse 3s ease-in-out infinite;
+  border-color: rgba(160, 200, 240, 0.4) !important;
+  background: linear-gradient(
+      135deg,
+      rgba(210, 228, 248, 0.35),
+      rgba(235, 243, 252, 0.45),
+      rgba(200, 222, 245, 0.4),
+      rgba(225, 238, 250, 0.35)
+    ) !important;
+  background-size: 300% 300% !important;
+  animation:
+    skyBluePulse 3s ease-in-out infinite,
+    skyBlueGradient 4s ease-in-out infinite !important;
+  box-shadow: 0 0 24px rgba(150, 200, 245, 0.12) !important;
 }
 
 /* ------------------------------------------------------------------ */
