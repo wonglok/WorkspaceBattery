@@ -9,7 +9,9 @@ function App() {
   useEffect(() => {
     getConfig()
       .then((config) => {
-        if (config.workspace) setWorkspacePath(config.workspace);
+        if (config.workspace) {
+          setWorkspacePath(config.workspace);
+        }
       })
       .finally(() => setLoading(false));
   }, []);
