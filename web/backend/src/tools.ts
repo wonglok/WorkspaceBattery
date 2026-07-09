@@ -15,8 +15,7 @@ import { resolve, normalize } from "path";
 // Config
 // ---------------------------------------------------------------------------
 
-export const LLAMA_HOST =
-  process.env.LLAMA_HOST || "http://localhost:8222";
+export const LLAMA_HOST = process.env.LLAMA_HOST || "http://localhost:8222";
 
 // ---------------------------------------------------------------------------
 // Tool system types
@@ -241,7 +240,8 @@ export const TOOLS: ToolDef[] = [
           properties: {
             path: {
               type: "string",
-              description: "Relative path to the image file from workspace root",
+              description:
+                "Relative path to the image file from workspace root",
             },
           },
           required: ["path"],
@@ -289,9 +289,7 @@ export const TOOLS: ToolDef[] = [
         max_tokens: 1024,
       });
 
-      return (
-        resp.choices[0]?.message?.content ?? "No description available."
-      );
+      return resp.choices[0]?.message?.content ?? "No description available.";
     },
   ),
   defineTool(
@@ -300,14 +298,13 @@ export const TOOLS: ToolDef[] = [
       function: {
         name: "openInBrowser",
         description:
-          "Open an HTML file from the workspace in the system browser. Use this to preview web pages you've created. Path is relative to workspace root.",
+          "Open a file in browser from the workspace in the system browser. Use this to preview web pages you've created. Path is relative to workspace root.",
         parameters: {
           type: "object",
           properties: {
             path: {
               type: "string",
-              description:
-                "Relative path to the HTML file from workspace root",
+              description: "Relative path to the HTML file from workspace root",
             },
           },
           required: ["path"],
